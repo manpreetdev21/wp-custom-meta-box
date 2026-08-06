@@ -1,0 +1,43 @@
+[
+  {
+    "key": "field_rq8j7748wdecb",
+    "name": "test_1",
+    "label": "Test 1",
+    "type": "repeater",
+    "instructions": "",
+    "required": false,
+    "default": "12",
+    "placeholder": "",
+    "wrapper": { "width": "", "class": "", "id": "" },
+    "settings": [],
+    "conditional": [],
+    "sub_fields": [
+      {
+        "key": "field_aprv5ol76alt3",
+        "name": "asas",
+        "label": "asas",
+        "type": "text",
+        "instructions": "",
+        "required": false,
+        "default": "",
+        "placeholder": "",
+        "wrapper": { "width": "", "class": "", "id": "" },
+        "settings": [],
+        "conditional": []
+      },
+      {
+        "key": "field_ngckuky9unh0c",
+        "name": "asasa",
+        "label": "asasa",
+        "type": "color",
+        "instructions": "",
+        "required": false,
+        "default": "",
+        "placeholder": "",
+        "wrapper": { "width": "", "class": "", "id": "" },
+        "settings": [],
+        "conditional": []
+      }
+    ]
+  }
+]

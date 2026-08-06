@@ -1,0 +1,14 @@
+{
+  "name": "wp-custom-meta-box",
+  "version": "1.0.0",
+  "description": "Test harness for the plugin's browser scripts.",
+  "license": "GPL-2.0-or-later",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "test": "node --test \"tests/js/*.test.js\""
+  },
+  "devDependencies": {
+    "jsdom": "^26.0.0"
+  }
+}

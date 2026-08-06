@@ -1,0 +1,58 @@
+<?xml version="1.0"?>
+<ruleset name="WP Custom Meta Box">
+	<description>WordPress Coding Standards for WP Custom Meta Box.</description>
+
+	<file>.</file>
+	<exclude-pattern>/vendor/*</exclude-pattern>
+	<exclude-pattern>/node_modules/*</exclude-pattern>
+
+	<!--
+		The standalone checks in /tests deliberately define unprefixed
+		WordPress function shims and test doubles, which is exactly what the
+		global-prefix and one-class-per-file sniffs exist to prevent in
+		shipped code. They are dev-only and never loaded by WordPress.
+	-->
+	<exclude-pattern>/tests/*</exclude-pattern>
+
+	<arg name="extensions" value="php"/>
+	<arg name="basepath" value="."/>
+	<arg name="colors"/>
+	<arg value="ps"/>
+
+	<rule ref="WordPress">
+		<!-- PSR-4 requires one class per file named after the class. -->
+		<exclude name="WordPress.Files.FileName"/>
+	</rule>
+
+	<config name="minimum_wp_version" value="6.8"/>
+	<config name="testVersion" value="8.1-"/>
+	<rule ref="PHPCompatibilityWP"/>
+
+	<rule ref="WordPress.WP.I18n">
+		<properties>
+			<property name="text_domain" type="array">
+				<element value="wp-custom-meta-box"/>
+			</property>
+		</properties>
+	</rule>
+
+	<rule ref="WordPress.NamingConventions.PrefixAllGlobals">
+		<properties>
+			<property name="prefixes" type="array">
+				<element value="wpcmb"/>
+				<element value="WPCMB"/>
+			</property>
+		</properties>
+	</rule>
+
+	<!--
+		Hooks are namespaced with slashes (wpcmb/field_group/saved) and use
+		`=` for the variable part of a dynamic hook (wpcmb/validate/type=text),
+		so both read as word separators rather than as missing underscores.
+	-->
+	<rule ref="WordPress.NamingConventions.ValidHookName">
+		<properties>
+			<property name="additionalWordDelimiters" value="/="/>
+		</properties>
+	</rule>
+</ruleset>

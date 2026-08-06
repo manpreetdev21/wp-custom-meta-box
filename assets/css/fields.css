@@ -1,0 +1,750 @@
+/**
+ * Field styles for edit screens.
+ *
+ * These load wherever fields render — post, page, term, user, comment and
+ * front-end forms — so nothing here is scoped to a plugin screen. Every
+ * selector is anchored on a `wpcmb-` class instead, which cannot match markup
+ * the plugin did not write.
+ *
+ * Like the plugin's own screens, this has no accent colour of its own: it
+ * reads `--wp-admin-theme-color`, so fields match whichever admin colour
+ * scheme the user picked. The hex fallback is for the front end, where that
+ * property is not set.
+ *
+ * @package WPCMB
+ */
+
+/*
+ * Tokens go on every wrapper that can be outermost, not just the field list.
+ * A block in the editor and the block's own placeholder both render beside
+ * `.wpcmb-group-fields` rather than inside it, so scoping the tokens to the
+ * field list alone would leave their borders resolving to nothing.
+ */
+.wpcmb-group-fields,
+.wpcmb-block-editor,
+.wpcmb-block__placeholder {
+	--wpcmb-field-gap: 16px;
+	--wpcmb-surface: #fff;
+	--wpcmb-sunken: #f6f7f7;
+	--wpcmb-border: #dcdcde;
+	--wpcmb-border-strong: #c3c4c7;
+	--wpcmb-muted: #646970;
+	--wpcmb-accent: var( --wp-admin-theme-color, #2271b1 );
+	--wpcmb-accent-tint: rgba( 34, 113, 177, 0.08 );
+	--wpcmb-danger: #b32d2e;
+	--wpcmb-danger-tint: rgba( 179, 45, 46, 0.07 );
+	--wpcmb-radius: 4px;
+
+	display: flex;
+	flex-wrap: wrap;
+	gap: var( --wpcmb-field-gap );
+}
+
+@media ( prefers-color-scheme: dark ) {
+	.wpcmb-group-fields,
+	.wpcmb-block-editor,
+	.wpcmb-block__placeholder {
+		--wpcmb-surface: #1e1f21;
+		--wpcmb-sunken: #17181a;
+		--wpcmb-border: #3c3f44;
+		--wpcmb-border-strong: #4f5359;
+		--wpcmb-muted: #a7aaad;
+		--wpcmb-accent: var( --wp-admin-theme-color, #72aee6 );
+		--wpcmb-accent-tint: rgba( 114, 174, 230, 0.12 );
+		--wpcmb-danger: #f86368;
+		--wpcmb-danger-tint: rgba( 248, 99, 104, 0.1 );
+	}
+}
+
+/*
+ * The group description reads as the meta box's subtitle, so it gets a rule
+ * under it. The flex gap already supplies the space below the rule.
+ */
+.wpcmb-group-description {
+	border-bottom: 1px solid var( --wpcmb-border );
+	color: var( --wpcmb-muted );
+	flex: 1 0 100%;
+	margin: 0;
+	padding-bottom: 12px;
+}
+
+/* A field claims a whole row unless it sets a width. */
+
+.wpcmb-field {
+	flex: 1 1 100%;
+	min-width: 0;
+}
+
+/*
+ * A meta box with a dozen fields in it is a wall of controls. A hairline
+ * under each top-level field makes it scan as rows. Direct children only —
+ * inside a repeater row the card border already does this job, and a second
+ * set of lines there would be noise.
+ */
+.wpcmb-group-fields > .wpcmb-field,
+.wpcmb-tab-panel > .wpcmb-field {
+	border-bottom: 1px solid var( --wpcmb-border );
+	padding-bottom: var( --wpcmb-field-gap );
+}
+
+/*
+ * No trailing rule on the last field. Conditional logic hides fields with
+ * `hidden`, so "last" has to mean the last *visible* one or a group whose
+ * tail is conditionally hidden keeps a rule dangling under it.
+ */
+.wpcmb-group-fields > .wpcmb-field:not( :has( ~ .wpcmb-field:not( [hidden] ) ) ),
+.wpcmb-tab-panel > .wpcmb-field:not( :has( ~ .wpcmb-field:not( [hidden] ) ) ) {
+	border-bottom: 0;
+	padding-bottom: 0;
+}
+
+.wpcmb-field[style*="--wpcmb-width"] {
+	flex-basis: calc( var( --wpcmb-width ) - var( --wpcmb-field-gap ) );
+}
+
+.wpcmb-field[hidden] {
+	display: none;
+}
+
+.wpcmb-field__label label {
+	display: inline-block;
+	font-weight: 600;
+	margin-bottom: 5px;
+}
+
+.wpcmb-required {
+	border: 0;
+	color: var( --wpcmb-danger );
+	font-weight: 700;
+	text-decoration: none;
+}
+
+.wpcmb-field__instructions {
+	color: var( --wpcmb-muted );
+	font-size: 13px;
+	margin: 5px 0 0;
+}
+
+/*
+ * An error is the one place colour is spent freely. A red sentence under a
+ * control is easy to miss in a long form; a tinted block with a rule beside
+ * it is not.
+ */
+.wpcmb-field__error {
+	background: var( --wpcmb-danger-tint );
+	border-inline-start: 3px solid var( --wpcmb-danger );
+	border-radius: 0 var( --wpcmb-radius ) var( --wpcmb-radius ) 0;
+	color: var( --wpcmb-danger );
+	font-size: 13px;
+	margin: 6px 0 0;
+	padding: 6px 10px;
+}
+
+.wpcmb-field__note {
+	color: var( --wpcmb-muted );
+	font-size: 12px;
+	font-style: italic;
+	margin: 5px 0 0;
+}
+
+/* Labels beside fields, when the group asks for it. */
+
+@media screen and ( min-width: 783px ) {
+	.wpcmb-labels--left .wpcmb-field {
+		align-items: baseline;
+		display: flex;
+		gap: var( --wpcmb-field-gap );
+	}
+
+	.wpcmb-labels--left .wpcmb-field__label {
+		flex: 0 0 180px;
+	}
+
+	.wpcmb-labels--left .wpcmb-field__control {
+		flex: 1 1 auto;
+		min-width: 0;
+	}
+}
+
+/* Controls. */
+
+.wpcmb-input {
+	max-width: 100%;
+	width: 100%;
+}
+
+input.wpcmb-input[type="range"],
+input.wpcmb-input[type="date"],
+input.wpcmb-input[type="time"],
+input.wpcmb-input[type="datetime-local"] {
+	width: auto;
+}
+
+.wpcmb-range-value {
+	display: inline-block;
+	font-variant-numeric: tabular-nums;
+	margin-inline-start: 8px;
+	min-width: 3ch;
+}
+
+/*
+ * Colour: one control, swatch on the leading side and the hex code on the
+ * trailing side. The wrapper draws the border and owns the focus ring so the
+ * pair reads as a single input rather than two controls that happen to touch.
+ */
+
+.wpcmb-color {
+	align-items: stretch;
+	background: var( --wpcmb-surface );
+	border: 1px solid var( --wpcmb-border-strong );
+	border-radius: var( --wpcmb-radius );
+	display: inline-flex;
+	max-width: 100%;
+	overflow: hidden;
+	transition: border-color 0.12s ease, box-shadow 0.12s ease;
+	width: 220px;
+}
+
+.wpcmb-color:focus-within {
+	border-color: var( --wpcmb-accent );
+	box-shadow: 0 0 0 1px var( --wpcmb-accent );
+}
+
+/*
+ * A native colour input paints its swatch inset inside its own chrome. The
+ * negative margin crops that chrome away, leaving a flush block of colour
+ * against the leading edge.
+ */
+.wpcmb-color__swatch {
+	background: none;
+	border: 0;
+	border-inline-end: 1px solid var( --wpcmb-border );
+	cursor: pointer;
+	flex: 0 0 auto;
+	height: auto;
+	min-height: 30px;
+	padding: 0;
+	width: 44px;
+}
+
+.wpcmb-color__swatch::-webkit-color-swatch-wrapper {
+	padding: 0;
+}
+
+.wpcmb-color__swatch::-webkit-color-swatch {
+	border: 0;
+}
+
+.wpcmb-color__swatch::-moz-color-swatch {
+	border: 0;
+}
+
+/* The wrapper is the visible control, so the code input brings no chrome. */
+.wpcmb-color__code.wpcmb-input {
+	background: none;
+	border: 0;
+	border-radius: 0;
+	box-shadow: none;
+	flex: 1 1 auto;
+	font-family: ui-monospace, "SFMono-Regular", "Cascadia Mono", "Liberation Mono", monospace;
+	margin: 0;
+	min-height: 30px;
+	min-width: 0;
+	padding-inline: 10px;
+	text-transform: uppercase;
+	width: auto;
+}
+
+.wpcmb-color__code.wpcmb-input:focus {
+	box-shadow: none;
+	outline: 0;
+}
+
+.wpcmb-color__code.wpcmb-input::placeholder {
+	text-transform: none;
+}
+
+.wpcmb-choices {
+	display: flex;
+	flex-direction: column;
+	gap: 5px;
+}
+
+.wpcmb-choices--button_group,
+.wpcmb-choices--rating {
+	flex-direction: row;
+	flex-wrap: wrap;
+	gap: 0;
+}
+
+.wpcmb-choices--button_group .wpcmb-choice,
+.wpcmb-choices--rating .wpcmb-choice {
+	border: 1px solid var( --wpcmb-border );
+	cursor: pointer;
+	margin-inline-end: -1px;
+	padding: 6px 14px;
+	transition: background-color 0.12s ease;
+}
+
+.wpcmb-choices--button_group .wpcmb-choice:first-child,
+.wpcmb-choices--rating .wpcmb-choice:first-child {
+	border-radius: var( --wpcmb-radius ) 0 0 var( --wpcmb-radius );
+}
+
+.wpcmb-choices--button_group .wpcmb-choice:last-child,
+.wpcmb-choices--rating .wpcmb-choice:last-child {
+	border-radius: 0 var( --wpcmb-radius ) var( --wpcmb-radius ) 0;
+}
+
+.wpcmb-choices--button_group .wpcmb-choice input,
+.wpcmb-choices--rating .wpcmb-choice input {
+	position: absolute;
+	opacity: 0;
+	pointer-events: none;
+}
+
+.wpcmb-choices--button_group .wpcmb-choice:hover,
+.wpcmb-choices--rating .wpcmb-choice:hover {
+	background: var( --wpcmb-accent-tint );
+}
+
+.wpcmb-choices--button_group .wpcmb-choice:has( input:checked ),
+.wpcmb-choices--rating .wpcmb-choice:has( input:checked ) {
+	background: var( --wpcmb-accent );
+	border-color: var( --wpcmb-accent );
+	color: #fff;
+}
+
+/* The hidden radio still owns focus, so the label has to show it. */
+.wpcmb-choices--button_group .wpcmb-choice:has( input:focus-visible ),
+.wpcmb-choices--rating .wpcmb-choice:has( input:focus-visible ) {
+	outline: 2px solid var( --wpcmb-accent );
+	outline-offset: 1px;
+	position: relative;
+}
+
+/* Media. */
+
+.wpcmb-media__list {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	list-style: none;
+	margin: 8px 0;
+	padding: 0;
+}
+
+.wpcmb-media__item {
+	align-items: center;
+	background: var( --wpcmb-surface );
+	border: 1px solid var( --wpcmb-border );
+	border-radius: var( --wpcmb-radius );
+	display: flex;
+	gap: 8px;
+	margin: 0;
+	padding: 5px 8px;
+	transition: border-color 0.12s ease;
+}
+
+.wpcmb-media__item:hover {
+	border-color: var( --wpcmb-accent );
+}
+
+.wpcmb-media__item img {
+	border-radius: 2px;
+	height: 40px;
+	object-fit: cover;
+	width: 40px;
+}
+
+.wpcmb-media__title {
+	max-width: 16ch;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.wpcmb-media__remove {
+	background: none;
+	border: 0;
+	border-radius: 3px;
+	color: var( --wpcmb-muted );
+	cursor: pointer;
+	font-size: 16px;
+	line-height: 1;
+	padding: 2px 5px;
+}
+
+.wpcmb-media__remove:hover {
+	background: var( --wpcmb-danger-tint );
+	color: var( --wpcmb-danger );
+}
+
+.wpcmb-media__actions {
+	margin: 0;
+}
+
+/* Composite types. */
+
+.wpcmb-link__row,
+.wpcmb-address__row {
+	margin: 0 0 8px;
+}
+
+.wpcmb-address {
+	display: grid;
+	gap: 0 12px;
+	grid-template-columns: repeat( auto-fit, minmax( 200px, 1fr ) );
+}
+
+.wpcmb-group {
+	background: var( --wpcmb-sunken );
+	border-inline-start: 3px solid var( --wpcmb-border );
+	border-radius: 0 var( --wpcmb-radius ) var( --wpcmb-radius ) 0;
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	padding: 12px;
+}
+
+.wpcmb-message {
+	background: var( --wpcmb-accent-tint );
+	border-inline-start: 3px solid var( --wpcmb-accent );
+	border-radius: 0 var( --wpcmb-radius ) var( --wpcmb-radius ) 0;
+	padding: 9px 13px;
+}
+
+.wpcmb-enhanced__preview:empty {
+	display: none;
+}
+
+.wpcmb-enhanced__preview {
+	margin-top: 8px;
+	max-width: 100%;
+}
+
+.wpcmb-enhanced--signature canvas {
+	border: 1px solid var( --wpcmb-border );
+	border-radius: var( --wpcmb-radius );
+	touch-action: none;
+}
+
+/* Repeater. */
+
+.wpcmb-repeater__rows {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.wpcmb-repeater__row {
+	background: var( --wpcmb-surface );
+	border: 1px solid var( --wpcmb-border );
+	border-radius: var( --wpcmb-radius );
+	transition: border-color 0.12s ease;
+}
+
+.wpcmb-repeater__row:hover {
+	border-color: var( --wpcmb-border-strong );
+}
+
+/* The row being edited is the one worth pointing at. */
+.wpcmb-repeater__row:not( .is-collapsed ) {
+	border-color: var( --wpcmb-accent );
+}
+
+.wpcmb-repeater__placeholder {
+	background: var( --wpcmb-accent-tint );
+	border: 1px dashed var( --wpcmb-accent );
+	border-radius: var( --wpcmb-radius );
+}
+
+.wpcmb-repeater__header {
+	align-items: center;
+	background: var( --wpcmb-sunken );
+	border-radius: calc( var( --wpcmb-radius ) - 1px );
+	display: flex;
+	gap: 8px;
+	padding: 7px 10px;
+}
+
+.wpcmb-repeater__row:not( .is-collapsed ) .wpcmb-repeater__header {
+	border-bottom: 1px solid var( --wpcmb-border );
+	border-radius: calc( var( --wpcmb-radius ) - 1px ) calc( var( --wpcmb-radius ) - 1px ) 0 0;
+}
+
+.wpcmb-repeater__handle {
+	color: var( --wpcmb-muted );
+	cursor: grab;
+	line-height: 1;
+}
+
+.wpcmb-repeater__handle:active {
+	cursor: grabbing;
+}
+
+.wpcmb-repeater__toggle {
+	background: none;
+	border: 0;
+	border-radius: 3px;
+	color: var( --wpcmb-muted );
+	cursor: pointer;
+	line-height: 1;
+	padding: 3px 5px;
+	transition: transform 0.15s ease;
+}
+
+.wpcmb-repeater__row.is-collapsed .wpcmb-repeater__toggle {
+	transform: rotate( -90deg );
+}
+
+.wpcmb-repeater__title {
+	font-weight: 600;
+	margin-inline-end: auto;
+}
+
+.wpcmb-repeater__buttons {
+	display: flex;
+	gap: 2px;
+}
+
+.wpcmb-repeater__buttons button {
+	background: none;
+	border: 0;
+	border-radius: 3px;
+	color: var( --wpcmb-muted );
+	cursor: pointer;
+	line-height: 1;
+	padding: 4px 6px;
+}
+
+.wpcmb-repeater__buttons button:hover:not( [disabled] ) {
+	background: rgba( 128, 128, 128, 0.14 );
+	color: var( --wpcmb-accent );
+}
+
+.wpcmb-repeater__remove:hover:not( [disabled] ) {
+	color: var( --wpcmb-danger );
+}
+
+.wpcmb-repeater__buttons button[disabled] {
+	cursor: default;
+	opacity: 0.3;
+}
+
+.wpcmb-repeater__fields {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var( --wpcmb-field-gap );
+	padding: 14px;
+}
+
+.wpcmb-repeater__row.is-collapsed .wpcmb-repeater__fields {
+	display: none;
+}
+
+.wpcmb-repeater__actions {
+	align-items: center;
+	display: flex;
+	gap: 12px;
+	margin: 10px 0 0;
+	position: relative;
+}
+
+.wpcmb-repeater__csv {
+	display: flex;
+	gap: 12px;
+	margin-inline-start: auto;
+}
+
+.wpcmb-repeater__note {
+	color: var( --wpcmb-muted );
+	font-style: italic;
+}
+
+.wpcmb-repeater__preview {
+	color: var( --wpcmb-muted );
+	flex: 1 1 auto;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.wpcmb-repeater__row:not( .is-collapsed ) .wpcmb-repeater__preview {
+	display: none;
+}
+
+.wpcmb-repeater__badge {
+	color: var( --wpcmb-muted );
+}
+
+/* Flexible content layout picker. */
+
+.wpcmb-repeater--flexible .wpcmb-repeater__title {
+	margin-inline-end: 12px;
+}
+
+.wpcmb-layouts {
+	background: var( --wpcmb-surface );
+	border: 1px solid var( --wpcmb-border );
+	border-radius: var( --wpcmb-radius );
+	box-shadow: 0 4px 14px rgba( 0, 0, 0, 0.16 );
+	inset-block-start: 100%;
+	inset-inline-start: 0;
+	max-height: 320px;
+	min-width: 240px;
+	overflow-y: auto;
+	padding: 6px;
+	position: absolute;
+	z-index: 10;
+}
+
+.wpcmb-layouts[hidden] {
+	display: none;
+}
+
+.wpcmb-layouts__category {
+	color: var( --wpcmb-muted );
+	font-size: 11px;
+	font-weight: 600;
+	letter-spacing: 0.05em;
+	margin: 8px 8px 3px;
+	text-transform: uppercase;
+}
+
+.wpcmb-layouts__item {
+	align-items: center;
+	background: none;
+	border: 0;
+	border-radius: 3px;
+	cursor: pointer;
+	display: flex;
+	gap: 9px;
+	padding: 7px 9px;
+	text-align: start;
+	width: 100%;
+}
+
+.wpcmb-layouts__item:hover,
+.wpcmb-layouts__item:focus-visible {
+	background: var( --wpcmb-accent-tint );
+	color: var( --wpcmb-accent );
+}
+
+/* Blocks. */
+
+.wpcmb-block-editor {
+	border: 1px solid var( --wpcmb-border );
+	border-radius: var( --wpcmb-radius );
+	padding: 14px;
+}
+
+.wpcmb-block__placeholder {
+	background: var( --wpcmb-sunken );
+	border: 1px dashed var( --wpcmb-border-strong );
+	border-radius: var( --wpcmb-radius );
+	color: var( --wpcmb-muted );
+	padding: 1.5em;
+	text-align: center;
+}
+
+.wpcmb-block__fields {
+	margin: 0;
+}
+
+.wpcmb-block__label {
+	font-weight: 600;
+}
+
+.wpcmb-block__value {
+	margin: 0 0 0.75em;
+}
+
+/* Tabs. */
+
+.wpcmb-tabs {
+	border-bottom: 1px solid var( --wpcmb-border );
+	display: flex;
+	flex: 1 0 100%;
+	flex-wrap: wrap;
+	gap: 2px;
+}
+
+.wpcmb-tabs__button {
+	background: none;
+	border: 1px solid transparent;
+	border-bottom: 0;
+	border-radius: var( --wpcmb-radius ) var( --wpcmb-radius ) 0 0;
+	color: var( --wpcmb-muted );
+	cursor: pointer;
+	font-weight: 600;
+	margin-bottom: -1px;
+	padding: 7px 13px;
+}
+
+.wpcmb-tabs__button:hover {
+	color: var( --wpcmb-accent );
+}
+
+.wpcmb-tabs__button.is-active {
+	background: var( --wpcmb-surface );
+	border-color: var( --wpcmb-border );
+	border-bottom-color: var( --wpcmb-surface );
+	color: inherit;
+}
+
+.wpcmb-tab-panel {
+	display: flex;
+	flex: 1 0 100%;
+	flex-wrap: wrap;
+	gap: var( --wpcmb-field-gap );
+}
+
+.wpcmb-tab-panel[hidden] {
+	display: none;
+}
+
+.wpcmb-error-list {
+	list-style: disc;
+	margin: 0 0 0 20px;
+}
+
+/* A seamless group drops the meta box chrome around it. */
+
+.wpcmb-seamless {
+	background: none;
+	border: 0;
+	box-shadow: none;
+}
+
+.wpcmb-seamless > .postbox-header {
+	display: none;
+}
+
+.wpcmb-seamless .inside {
+	margin: 0;
+	padding: 0;
+}
+
+/* Narrow screens, down to 320px. */
+
+@media screen and ( max-width: 600px ) {
+	.wpcmb-repeater__fields {
+		padding: 10px;
+	}
+
+	.wpcmb-repeater__title {
+		font-size: 13px;
+	}
+
+	.wpcmb-media__title {
+		max-width: 10ch;
+	}
+}
+
+@media ( prefers-reduced-motion: reduce ) {
+	.wpcmb-group-fields *,
+	.wpcmb-block-editor * {
+		transition-duration: 0.01ms !important;
+	}
+}

@@ -1,0 +1,860 @@
+/**
+ * Admin styles.
+ *
+ * Scoped to .wpcmb-admin throughout, so the plugin never restyles the rest of
+ * wp-admin.
+ *
+ * The plugin has no accent colour of its own. It inherits
+ * `--wp-admin-theme-color`, which WordPress sets from whichever admin colour
+ * scheme the user picked, so the builder matches the rest of their admin
+ * instead of imposing a brand on it. The hex fallbacks are only for the rare
+ * screen where WordPress has not set the property.
+ *
+ * @package WPCMB
+ */
+
+.wpcmb-admin {
+	--wpcmb-surface: #fff;
+	--wpcmb-sunken: #f6f7f7;
+	--wpcmb-raised: #fff;
+	--wpcmb-border: #dcdcde;
+	--wpcmb-border-strong: #c3c4c7;
+	--wpcmb-text: #1d2327;
+	--wpcmb-muted: #646970;
+	--wpcmb-accent: var( --wp-admin-theme-color, #2271b1 );
+	--wpcmb-accent-tint: rgba( 34, 113, 177, 0.08 );
+	--wpcmb-danger: #b32d2e;
+	--wpcmb-radius: 4px;
+	--wpcmb-gap: 12px;
+	--wpcmb-shadow: 0 1px 2px rgba( 0, 0, 0, 0.06 );
+
+	/* Depth rails for nested field lists, one step per level. */
+	--wpcmb-rail: 3px;
+}
+
+@media ( prefers-color-scheme: dark ) {
+	.wpcmb-admin:not( .wpcmb-light ) {
+		--wpcmb-surface: #1e1f21;
+		--wpcmb-sunken: #17181a;
+		--wpcmb-raised: #26282b;
+		--wpcmb-border: #3c3f44;
+		--wpcmb-border-strong: #4f5359;
+		--wpcmb-text: #e6e7e8;
+		--wpcmb-muted: #a7aaad;
+		--wpcmb-accent: var( --wp-admin-theme-color, #72aee6 );
+		--wpcmb-accent-tint: rgba( 114, 174, 230, 0.12 );
+		--wpcmb-danger: #f86368;
+		--wpcmb-shadow: 0 1px 2px rgba( 0, 0, 0, 0.4 );
+	}
+}
+
+.wpcmb-admin.wpcmb-dark {
+	--wpcmb-surface: #1e1f21;
+	--wpcmb-sunken: #17181a;
+	--wpcmb-raised: #26282b;
+	--wpcmb-border: #3c3f44;
+	--wpcmb-border-strong: #4f5359;
+	--wpcmb-text: #e6e7e8;
+	--wpcmb-muted: #a7aaad;
+	--wpcmb-accent: var( --wp-admin-theme-color, #72aee6 );
+	--wpcmb-accent-tint: rgba( 114, 174, 230, 0.12 );
+	--wpcmb-danger: #f86368;
+	--wpcmb-shadow: 0 1px 2px rgba( 0, 0, 0, 0.4 );
+}
+
+.wpcmb-admin .wpcmb-wrap,
+.wpcmb-admin .wpcmb-builder {
+	color: var( --wpcmb-text );
+}
+
+/* Shared primitives. */
+
+.wpcmb-muted {
+	color: var( --wpcmb-muted );
+}
+
+.wpcmb-label {
+	display: block;
+	font-size: 12px;
+	font-weight: 600;
+	margin-bottom: 4px;
+}
+
+/*
+ * Section headings inside the builder. Small, tracked and quiet, so the
+ * hierarchy is legible without spending colour on it — colour is reserved
+ * for state that matters, like an error or the active tab.
+ */
+.wpcmb-admin .wpcmb-eyebrow,
+.wpcmb-admin .wpcmb-subsection > summary {
+	color: var( --wpcmb-muted );
+	font-size: 11px;
+	font-weight: 600;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+}
+
+/* A count beside a section heading, so a collapsed section still tells you
+   whether there is anything in it. */
+.wpcmb-count {
+	background: var( --wpcmb-sunken );
+	border: 1px solid var( --wpcmb-border );
+	border-radius: 9px;
+	color: var( --wpcmb-muted );
+	display: inline-block;
+	font-size: 10px;
+	font-weight: 600;
+	letter-spacing: 0;
+	line-height: 1.6;
+	margin-inline-start: 6px;
+	min-width: 18px;
+	padding: 0 5px;
+	text-align: center;
+}
+
+.wpcmb-admin :focus-visible {
+	outline: 2px solid var( --wpcmb-accent );
+	outline-offset: 1px;
+}
+
+/* Overview and tools. */
+
+.wpcmb-stats {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var( --wpcmb-gap );
+	margin: 20px 0;
+}
+
+.wpcmb-stat {
+	background: var( --wpcmb-surface );
+	border: 1px solid var( --wpcmb-border );
+	border-radius: var( --wpcmb-radius );
+	box-shadow: var( --wpcmb-shadow );
+	flex: 1 1 140px;
+	padding: 16px 18px;
+}
+
+.wpcmb-stat__value {
+	display: block;
+	font-size: 30px;
+	font-variant-numeric: tabular-nums;
+	font-weight: 500;
+	line-height: 1.1;
+}
+
+.wpcmb-stat__label {
+	color: var( --wpcmb-muted );
+	font-size: 12px;
+	letter-spacing: 0.03em;
+	text-transform: uppercase;
+}
+
+.wpcmb-cards {
+	display: grid;
+	gap: var( --wpcmb-gap );
+	grid-template-columns: repeat( auto-fit, minmax( 280px, 1fr ) );
+	margin: 20px 0;
+}
+
+.wpcmb-card {
+	background: var( --wpcmb-surface );
+	border: 1px solid var( --wpcmb-border );
+	border-radius: var( --wpcmb-radius );
+	box-shadow: var( --wpcmb-shadow );
+	display: flex;
+	flex-direction: column;
+	padding: 18px 20px;
+}
+
+.wpcmb-card h2 {
+	font-size: 15px;
+	margin: 0 0 6px;
+}
+
+.wpcmb-card p {
+	color: var( --wpcmb-muted );
+	flex: 1 1 auto;
+	margin: 0 0 14px;
+}
+
+.wpcmb-php-export {
+	font-family: Consolas, Monaco, monospace;
+	font-size: 12px;
+}
+
+.wpcmb-dashboard-list {
+	margin: 0;
+}
+
+.wpcmb-dashboard-list li {
+	border-bottom: 1px solid var( --wpcmb-border );
+	display: flex;
+	gap: 8px;
+	justify-content: space-between;
+	margin: 0;
+	padding: 8px 0;
+}
+
+.wpcmb-fieldset {
+	border: 1px solid var( --wpcmb-border );
+	border-radius: var( --wpcmb-radius );
+	margin: 12px 0;
+	padding: 10px 12px;
+}
+
+.wpcmb-fieldset legend {
+	color: var( --wpcmb-muted );
+	font-size: 11px;
+	font-weight: 600;
+	letter-spacing: 0.04em;
+	padding: 0 4px;
+	text-transform: uppercase;
+}
+
+.wpcmb-checkbox {
+	display: block;
+	margin-bottom: 4px;
+}
+
+/* Builder shell. */
+
+.wpcmb-builder__fallback {
+	color: var( --wpcmb-muted );
+}
+
+.wpcmb-builder__notice {
+	align-items: center;
+	background: var( --wpcmb-sunken );
+	border-inline-start: 3px solid var( --wpcmb-danger );
+	border-radius: 0 var( --wpcmb-radius ) var( --wpcmb-radius ) 0;
+	color: var( --wpcmb-danger );
+	display: flex;
+	gap: 8px;
+	margin: 12px 0 0;
+	padding: 8px 12px;
+}
+
+/*
+ * An empty list is an invitation, not a void. Without this a new field group
+ * is a heading, a button, and nothing that says what the button is for.
+ */
+.wpcmb-empty {
+	border: 1px dashed var( --wpcmb-border-strong );
+	border-radius: var( --wpcmb-radius );
+	color: var( --wpcmb-muted );
+	padding: 22px 16px;
+	text-align: center;
+}
+
+.wpcmb-empty__title {
+	color: var( --wpcmb-text );
+	display: block;
+	font-weight: 600;
+	margin-bottom: 2px;
+}
+
+/* The same placeholder, given room when it is the whole screen. */
+.wpcmb-empty--page {
+	background: var( --wpcmb-surface );
+	margin: 20px 0;
+	padding: 44px 24px;
+}
+
+.wpcmb-empty--page .wpcmb-empty__title {
+	font-size: 18px;
+	margin-bottom: 8px;
+}
+
+.wpcmb-empty--page p {
+	margin: 0 auto 16px;
+	max-width: 46ch;
+}
+
+/* A quiet note above the fold, for state worth knowing but not acting on. */
+.wpcmb-hint {
+	background: var( --wpcmb-accent-tint );
+	border-inline-start: 3px solid var( --wpcmb-accent );
+	border-radius: 0 var( --wpcmb-radius ) var( --wpcmb-radius ) 0;
+	margin: 16px 0;
+	padding: 10px 14px;
+}
+
+/* Field rows. */
+
+.wpcmb-builder__list {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.wpcmb-field-row {
+	background: var( --wpcmb-surface );
+	border: 1px solid var( --wpcmb-border );
+	border-radius: var( --wpcmb-radius );
+	box-shadow: var( --wpcmb-shadow );
+	transition: border-color 0.12s ease;
+}
+
+.wpcmb-field-row:hover {
+	border-color: var( --wpcmb-border-strong );
+}
+
+/* The open row is the one being worked on, so it gets the accent. */
+.wpcmb-field-row:not( .is-collapsed ) {
+	border-color: var( --wpcmb-accent );
+}
+
+.wpcmb-field-row__placeholder {
+	background: var( --wpcmb-accent-tint );
+	border: 1px dashed var( --wpcmb-accent );
+	border-radius: var( --wpcmb-radius );
+}
+
+.wpcmb-field-row__header {
+	align-items: center;
+	background: var( --wpcmb-sunken );
+	border-radius: calc( var( --wpcmb-radius ) - 1px );
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	padding: 8px 10px;
+}
+
+.wpcmb-field-row:not( .is-collapsed ) .wpcmb-field-row__header {
+	border-bottom: 1px solid var( --wpcmb-border );
+	border-radius: calc( var( --wpcmb-radius ) - 1px ) calc( var( --wpcmb-radius ) - 1px ) 0 0;
+}
+
+.wpcmb-field-row__handle {
+	color: var( --wpcmb-muted );
+	cursor: grab;
+	line-height: 1;
+	padding: 2px;
+}
+
+.wpcmb-field-row__handle:active {
+	cursor: grabbing;
+}
+
+.wpcmb-field-row__title {
+	font-weight: 600;
+}
+
+/*
+ * The type badge. A collapsed row is otherwise just a name, so you cannot
+ * tell a repeater from a text field without opening it. This is the one
+ * piece of decoration that is really information.
+ */
+.wpcmb-field-row__type {
+	background: var( --wpcmb-accent-tint );
+	border-radius: 3px;
+	color: var( --wpcmb-accent );
+	font-size: 11px;
+	font-weight: 600;
+	letter-spacing: 0.02em;
+	padding: 2px 7px;
+	white-space: nowrap;
+}
+
+.wpcmb-field-row__key {
+	background: none;
+	color: var( --wpcmb-muted );
+	font-size: 12px;
+	margin-inline-end: auto;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.wpcmb-field-row__toggle,
+.wpcmb-field-row__remove {
+	background: none;
+	border: 0;
+	border-radius: 3px;
+	cursor: pointer;
+	font-size: 15px;
+	line-height: 1;
+	padding: 4px 7px;
+}
+
+.wpcmb-field-row__toggle {
+	color: var( --wpcmb-muted );
+	transition: transform 0.15s ease;
+}
+
+.wpcmb-field-row__remove {
+	color: var( --wpcmb-danger );
+}
+
+.wpcmb-field-row__toggle:hover,
+.wpcmb-field-row__remove:hover {
+	background: rgba( 128, 128, 128, 0.14 );
+}
+
+.wpcmb-field-row.is-collapsed .wpcmb-field-row__toggle {
+	transform: rotate( -90deg );
+}
+
+.wpcmb-field-row__body {
+	padding: 14px;
+}
+
+.wpcmb-field-row.is-collapsed .wpcmb-field-row__body {
+	display: none;
+}
+
+.wpcmb-field-row__grid {
+	display: grid;
+	gap: var( --wpcmb-gap );
+	grid-template-columns: repeat( auto-fit, minmax( 190px, 1fr ) );
+	margin-bottom: var( --wpcmb-gap );
+}
+
+.wpcmb-field-row__control {
+	width: 100%;
+}
+
+.wpcmb-field-row__checkbox {
+	width: auto;
+}
+
+/* Builder toolbar. */
+
+.wpcmb-toolbar {
+	align-items: center;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin-bottom: 10px;
+}
+
+.wpcmb-toolbar__search {
+	flex: 1 1 180px;
+	max-width: 320px;
+}
+
+.wpcmb-toolbar__count {
+	color: var( --wpcmb-muted );
+	font-size: 12px;
+	font-variant-numeric: tabular-nums;
+}
+
+.wpcmb-toolbar__actions {
+	display: flex;
+	gap: 4px;
+	margin-inline-start: auto;
+}
+
+.wpcmb-toolbar__button {
+	background: none;
+	border: 1px solid var( --wpcmb-border );
+	border-radius: var( --wpcmb-radius );
+	color: var( --wpcmb-muted );
+	cursor: pointer;
+	font-size: 12px;
+	padding: 4px 10px;
+}
+
+.wpcmb-toolbar__button:hover {
+	border-color: var( --wpcmb-accent );
+	color: var( --wpcmb-accent );
+}
+
+/* Field row icon, required marker and duplicate control. */
+
+.wpcmb-field-row__icon {
+	color: var( --wpcmb-muted );
+	font-size: 17px;
+	height: 17px;
+	width: 17px;
+}
+
+.wpcmb-field-row:not( .is-collapsed ) .wpcmb-field-row__icon {
+	color: var( --wpcmb-accent );
+}
+
+.wpcmb-field-row__required {
+	border: 0;
+	color: var( --wpcmb-danger );
+	font-weight: 700;
+	text-decoration: none;
+}
+
+.wpcmb-field-row__duplicate {
+	background: none;
+	border: 0;
+	border-radius: 3px;
+	color: var( --wpcmb-muted );
+	cursor: pointer;
+	font-size: 14px;
+	line-height: 1;
+	padding: 4px 7px;
+}
+
+.wpcmb-field-row__duplicate:hover {
+	background: rgba( 128, 128, 128, 0.14 );
+	color: var( --wpcmb-accent );
+}
+
+.wpcmb-field-row[hidden] {
+	display: none;
+}
+
+/* Field setting tabs. */
+
+.wpcmb-tabset__list {
+	border-bottom: 1px solid var( --wpcmb-border );
+	display: flex;
+	flex-wrap: wrap;
+	gap: 2px;
+	margin-bottom: 14px;
+}
+
+.wpcmb-tabset__tab {
+	background: none;
+	border: 1px solid transparent;
+	border-bottom: 0;
+	border-radius: var( --wpcmb-radius ) var( --wpcmb-radius ) 0 0;
+	color: var( --wpcmb-muted );
+	cursor: pointer;
+	font-size: 12px;
+	font-weight: 600;
+	margin-bottom: -1px;
+	padding: 7px 13px;
+}
+
+.wpcmb-tabset__tab:hover {
+	color: var( --wpcmb-accent );
+}
+
+.wpcmb-tabset__tab.is-active {
+	background: var( --wpcmb-surface );
+	border-color: var( --wpcmb-border );
+	border-bottom-color: var( --wpcmb-surface );
+	color: var( --wpcmb-text );
+}
+
+.wpcmb-tabset__panel[hidden] {
+	display: none;
+}
+
+/* Sub sections: settings, logic, sub fields, layouts. */
+
+.wpcmb-subsection {
+	border-top: 1px solid var( --wpcmb-border );
+	margin-top: 14px;
+	padding-top: 10px;
+}
+
+.wpcmb-subsection > summary {
+	cursor: pointer;
+	list-style: none;
+	margin-bottom: 10px;
+	padding-inline-start: 14px;
+	position: relative;
+	user-select: none;
+}
+
+.wpcmb-subsection > summary::-webkit-details-marker {
+	display: none;
+}
+
+/* A disclosure triangle drawn in CSS, so it turns with the section. */
+.wpcmb-subsection > summary::before {
+	border-inline-start: 4px solid currentColor;
+	border-bottom: 3px solid transparent;
+	border-top: 3px solid transparent;
+	content: '';
+	inset-inline-start: 2px;
+	position: absolute;
+	top: 50%;
+	transform: translateY( -50% );
+	transition: transform 0.15s ease;
+}
+
+.wpcmb-subsection[open] > summary::before {
+	transform: translateY( -50% ) rotate( 90deg );
+}
+
+.wpcmb-subsection > summary:hover {
+	color: var( --wpcmb-accent );
+}
+
+/*
+ * Nested field lists get a rail so depth is visible. Without it a repeater
+ * inside a repeater is just more rows, and there is no way to see where one
+ * level ends and the next begins.
+ */
+.wpcmb-subsection .wpcmb-builder__list {
+	border-inline-start: var( --wpcmb-rail ) solid var( --wpcmb-border );
+	border-radius: 2px;
+	padding-inline-start: 12px;
+}
+
+.wpcmb-subsection .wpcmb-builder__list:hover {
+	border-inline-start-color: var( --wpcmb-accent );
+}
+
+/* Flexible content layouts. */
+
+.wpcmb-layout {
+	background: var( --wpcmb-sunken );
+	border: 1px solid var( --wpcmb-border );
+	border-radius: var( --wpcmb-radius );
+	margin-bottom: 10px;
+	padding: 12px 14px;
+}
+
+/* Location rules. */
+
+/*
+ * A plain-language restatement of the rules, updated as they are edited.
+ * Rules are an OR list of AND sets, and reading that structure back off the
+ * controls is the part people get wrong — so the sentence says it instead.
+ */
+.wpcmb-location-summary {
+	background: var( --wpcmb-accent-tint );
+	border-inline-start: 3px solid var( --wpcmb-accent );
+	border-radius: 0 var( --wpcmb-radius ) var( --wpcmb-radius ) 0;
+	margin: 0 0 12px;
+	padding: 9px 13px;
+}
+
+.wpcmb-location-summary.is-empty {
+	background: var( --wpcmb-sunken );
+	border-inline-start-color: var( --wpcmb-border-strong );
+	color: var( --wpcmb-muted );
+}
+
+.wpcmb-rule-group__header {
+	align-items: center;
+	display: flex;
+	gap: 8px;
+	margin-bottom: 10px;
+}
+
+.wpcmb-rule-group__title {
+	color: var( --wpcmb-muted );
+	font-size: 11px;
+	font-weight: 600;
+	letter-spacing: 0.04em;
+	margin-inline-end: auto;
+	text-transform: uppercase;
+}
+
+.wpcmb-rule-group__buttons {
+	display: flex;
+	gap: 2px;
+}
+
+.wpcmb-rule-group__action {
+	background: none;
+	border: 0;
+	border-radius: 3px;
+	color: var( --wpcmb-muted );
+	cursor: pointer;
+	font-size: 14px;
+	line-height: 1;
+	padding: 4px 7px;
+}
+
+.wpcmb-rule-group__action:hover {
+	background: rgba( 128, 128, 128, 0.14 );
+	color: var( --wpcmb-accent );
+}
+
+.wpcmb-rule-group__action--delete:hover {
+	color: var( --wpcmb-danger );
+}
+
+.wpcmb-rule-group {
+	background: var( --wpcmb-surface );
+	border: 1px solid var( --wpcmb-border );
+	border-radius: var( --wpcmb-radius );
+	margin-bottom: 8px;
+	padding: 12px 14px;
+}
+
+/*
+ * "or" between rule groups, drawn as a real separator. Rule groups are an OR
+ * list of AND sets, and that structure is the single thing people get wrong
+ * about location rules, so it is worth showing rather than labelling.
+ */
+.wpcmb-rule-group__or {
+	align-items: center;
+	color: var( --wpcmb-muted );
+	display: flex;
+	font-size: 11px;
+	font-weight: 600;
+	gap: 10px;
+	letter-spacing: 0.08em;
+	margin: -4px 0 10px;
+	text-transform: uppercase;
+}
+
+.wpcmb-rule-group__or::before,
+.wpcmb-rule-group__or::after {
+	background: var( --wpcmb-border );
+	content: '';
+	flex: 1 1 auto;
+	height: 1px;
+}
+
+/*
+ * A rule reads left to right as a sentence: icon, subject, comparison,
+ * value. The columns are sized to that reading rather than evenly, so the
+ * short operator does not take the same room as the value it qualifies.
+ */
+.wpcmb-rule {
+	align-items: start;
+	display: grid;
+	gap: 8px;
+	grid-template-columns: 34px 20px minmax( 0, 1.4fr ) minmax( 0, 1fr ) minmax( 0, 1.8fr ) 30px;
+	padding: 6px 0;
+	position: relative;
+}
+
+/*
+ * Rules inside a group are ANDed. The connector draws that relationship up
+ * to the rule above, which is otherwise only implied by them sharing a box.
+ */
+.wpcmb-rule.is-joined::before {
+	background: var( --wpcmb-border );
+	content: '';
+	inset-block-start: -6px;
+	inset-inline-start: 16px;
+	position: absolute;
+	width: 1px;
+	height: 12px;
+}
+
+.wpcmb-rule__joiner {
+	color: var( --wpcmb-muted );
+	font-size: 11px;
+	font-weight: 600;
+	letter-spacing: 0.04em;
+	line-height: 30px;
+	text-align: end;
+	text-transform: uppercase;
+}
+
+.wpcmb-rule__icon {
+	color: var( --wpcmb-muted );
+	font-size: 18px;
+	height: 18px;
+	line-height: 30px;
+	width: 18px;
+}
+
+.wpcmb-rule:hover .wpcmb-rule__icon {
+	color: var( --wpcmb-accent );
+}
+
+.wpcmb-rule .wpcmb-field-row__control {
+	width: 100%;
+}
+
+.wpcmb-rule__remove {
+	background: none;
+	border: 0;
+	border-radius: 3px;
+	color: var( --wpcmb-muted );
+	cursor: pointer;
+	font-size: 15px;
+	line-height: 1;
+	padding: 6px;
+}
+
+.wpcmb-rule__remove:hover {
+	background: rgba( 128, 128, 128, 0.14 );
+	color: var( --wpcmb-danger );
+}
+
+.wpcmb-rule__add {
+	background: none;
+	border: 1px dashed var( --wpcmb-border-strong );
+	border-radius: var( --wpcmb-radius );
+	color: var( --wpcmb-muted );
+	cursor: pointer;
+	font-size: 12px;
+	margin-inline-start: 42px;
+	padding: 5px 12px;
+}
+
+.wpcmb-rule__add:hover {
+	border-color: var( --wpcmb-accent );
+	border-style: solid;
+	color: var( --wpcmb-accent );
+}
+
+.wpcmb-rule-group__actions {
+	margin: 0;
+}
+
+/* An object rule: a search box above the dropdown it narrows. */
+
+.wpcmb-rule__object {
+	display: flex;
+	flex: 2 1 260px;
+	flex-direction: column;
+	gap: 4px;
+	min-width: 0;
+}
+
+.wpcmb-rule__object .wpcmb-field-row__control {
+	width: 100%;
+}
+
+.wpcmb-rule__search {
+	font-size: 12px;
+}
+
+.wpcmb-rule__status {
+	color: var( --wpcmb-muted );
+	font-size: 12px;
+}
+
+.wpcmb-rule__status:empty {
+	display: none;
+}
+
+/* Narrow screens: the rule parts stack rather than squeeze. */
+
+@media screen and ( max-width: 782px ) {
+	/* One column per part, so nothing is squeezed to unreadable width. */
+	.wpcmb-rule {
+		grid-template-columns: 20px minmax( 0, 1fr ) 30px;
+	}
+
+	.wpcmb-rule__joiner {
+		grid-column: 1 / -1;
+		line-height: 1.4;
+		text-align: start;
+	}
+
+	.wpcmb-rule__param,
+	.wpcmb-rule__operator,
+	.wpcmb-rule__object {
+		grid-column: 2 / -1;
+	}
+
+	.wpcmb-rule.is-joined::before {
+		display: none;
+	}
+
+	.wpcmb-rule__add {
+		margin-inline-start: 0;
+	}
+
+	.wpcmb-field-row__key {
+		flex: 1 0 100%;
+		margin-inline-end: 0;
+		order: 10;
+	}
+}
+
+@media ( prefers-reduced-motion: reduce ) {
+	.wpcmb-admin * {
+		transition-duration: 0.01ms !important;
+	}
+}

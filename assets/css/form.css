@@ -1,0 +1,66 @@
+/**
+ * Front-end form styles.
+ *
+ * Deliberately minimal: a form on the front end belongs to the theme, so this
+ * sets layout and the states a theme cannot guess at, and inherits type,
+ * colour and button styling from wherever it is placed.
+ *
+ * @package WPCMB
+ */
+
+.wpcmb-form-wrap {
+	margin: 1.5em 0;
+}
+
+.wpcmb-form .wpcmb-group-fields {
+	--wpcmb-field-gap: 1.25em;
+}
+
+.wpcmb-form__actions {
+	align-items: center;
+	display: flex;
+	gap: 1em;
+	margin-top: 1.5em;
+}
+
+.wpcmb-form__status:empty {
+	display: none;
+}
+
+.wpcmb-form__notice {
+	border-inline-start: 4px solid currentColor;
+	margin: 0 0 1.5em;
+	padding: 0.75em 1em;
+}
+
+.wpcmb-form__notice--success {
+	background: rgba( 0, 128, 0, 0.06 );
+	color: #0a7a2f;
+}
+
+.wpcmb-form__notice--error {
+	background: rgba( 180, 0, 0, 0.06 );
+	color: #b32d2e;
+}
+
+/*
+ * The honeypot. Moved out of view rather than display:none or hidden, because
+ * form-filling scripts skip fields the browser reports as hidden and this one
+ * needs to look fillable to them. aria-hidden and tabindex="-1" in the markup
+ * keep it away from screen readers and keyboard users.
+ */
+
+.wpcmb-form__hp {
+	height: 1px;
+	inset-inline-start: -9999px;
+	overflow: hidden;
+	position: absolute;
+	top: auto;
+	width: 1px;
+}
+
+@media ( prefers-reduced-motion: reduce ) {
+	.wpcmb-form :focus {
+		scroll-behavior: auto;
+	}
+}
