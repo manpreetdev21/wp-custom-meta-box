@@ -1,0 +1,25 @@
+/vendor/
+/node_modules/
+
+# Build/tooling output
+/tests/coverage/
+.phpunit.result.cache
+.phpcs-cache
+phpcs.xml
+phpunit.xml
+
+# Env & editor
+.env
+.env.*
+.idea/
+.vscode/
+*.code-workspace
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Logs & temp
+*.log
+*.bak
+*~
