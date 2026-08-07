@@ -194,4 +194,99 @@ $set = ob_get_clean();
 
 assert( 2 === substr_count( $set, 'value="#AABBCC"' ), 'a stored colour shows in both the swatch and the code' );
 
+/* -------------------------------------------------------------------------
+ * Choice: the controls each type actually renders.
+ * ---------------------------------------------------------------------- */
+
+$choice = new Choice();
+
+/**
+ * Render one choice field and return its markup.
+ *
+ * @param string               $type     Field type.
+ * @param array<string, mixed> $settings Field settings.
+ * @param mixed                $value    Current value.
+ */
+function wpcmb_choice_markup( string $type, array $settings = array(), mixed $value = '' ): string {
+	ob_start();
+	( new Choice() )->render(
+		wpcmb_field( $type, $settings ),
+		$value,
+		'wpcmb_values[pick]',
+		'wpcmb-g-pick'
+	);
+
+	return (string) ob_get_clean();
+}
+
+// Country and region lists run to hundreds of entries. Rendered as radios —
+// which is what happened before — a country field is a page of radio buttons.
+assert( str_contains( wpcmb_choice_markup( 'country' ), '<select' ), 'a country field is a dropdown' );
+assert( str_contains( wpcmb_choice_markup( 'state' ), '<select' ), 'a region field is a dropdown' );
+assert( ! str_contains( wpcmb_choice_markup( 'country' ), 'type="radio"' ), 'and not a radio list' );
+
+// The bundled list is what makes the field usable out of the box; regions
+// used to come back empty, which rendered a control with no options at all.
+assert( substr_count( wpcmb_choice_markup( 'country' ), '<option' ) > 200, 'countries are populated' );
+assert( substr_count( wpcmb_choice_markup( 'state' ), '<option' ) > 40, 'regions are populated' );
+assert( str_contains( wpcmb_choice_markup( 'country' ), '>France<' ), 'countries carry names, not bare codes' );
+
+// Multiple has to reach country and region too, or the setting shows in the
+// editor and does nothing.
+$multi = wpcmb_choice_markup( 'country', array( 'multiple' => '1' ) );
+assert( str_contains( $multi, 'multiple' ), 'a country field can accept several' );
+assert( str_contains( $multi, 'name="wpcmb_values[pick][]"' ), 'and posts as a list' );
+assert( is_array( $choice->sanitize( array( 'FR', 'DE' ), wpcmb_field( 'country', array( 'multiple' => '1' ) ) ) ), 'several countries survive' );
+assert( 'FR' === $choice->sanitize( array( 'FR', 'DE' ), wpcmb_field( 'country' ) ), 'a single country keeps one' );
+
+/* True/false: a boolean, like toggle, with both states named. */
+
+assert( true === $choice->sanitize( '1', wpcmb_field( 'true_false' ) ), 'on stores true' );
+assert( false === $choice->sanitize( '0', wpcmb_field( 'true_false' ) ), 'off stores false' );
+assert( false === $choice->sanitize( '', wpcmb_field( 'true_false' ) ), 'absent stores false' );
+assert( true === $choice->format( 1, wpcmb_field( 'true_false' ) ), 'it formats as a boolean' );
+
+$tf = wpcmb_choice_markup( 'true_false', array( 'on_label' => 'Yes please', 'off_label' => 'No thanks' ) );
+assert( str_contains( $tf, 'wpcmb-switch' ), 'true/false renders as a switch' );
+assert( str_contains( $tf, 'data-wpcmb-on="Yes please"' ), 'the on label is carried' );
+assert( str_contains( $tf, 'data-wpcmb-off="No thanks"' ), 'and the off label too' );
+
+// The hidden partner is what tells the save path "this was on the form and
+// left off", as opposed to "this field was never shown".
+assert( substr_count( $tf, 'name="wpcmb_values[pick]"' ) === 2, 'an unchecked switch still posts' );
+
+/* Rating: emitted highest-first so CSS can light up every star below. */
+
+$rating = wpcmb_choice_markup( 'rating', array( 'max' => '5' ) );
+preg_match_all( '/value="(\d)"/', $rating, $stars );
+assert( array( '5', '4', '3', '2', '1' ) === $stars[1], 'stars are emitted in reverse' );
+
+/* The site-managed lists replace the bundled ones. */
+
+update_option( Choice::COUNTRIES_OPTION, "ZZ : Atlantis\nYY : Avalon" );
+$managed = wpcmb_choice_markup( 'country' );
+
+// Two entries plus the empty "— Select —" a single-value dropdown always has.
+assert( 3 === substr_count( $managed, '<option value="' ), 'a managed list replaces the bundled one' );
+assert( str_contains( $managed, '>Atlantis<' ), 'and is what gets offered' );
+assert( ! str_contains( $managed, '>France<' ), 'the bundled list is gone, not merged' );
+assert( 'ZZ' === $choice->sanitize( 'ZZ', wpcmb_field( 'country' ) ), 'a managed value is accepted' );
+assert( '' === $choice->sanitize( 'FR', wpcmb_field( 'country' ) ), 'and one outside the list is not' );
+delete_option( Choice::COUNTRIES_OPTION );
+
+/* -------------------------------------------------------------------------
+ * Icon: three kinds of value in one string, and nothing else.
+ * ---------------------------------------------------------------------- */
+
+$enhanced_icon = wpcmb_field( 'icon' );
+
+assert( 'dashicons-star-filled' === $enhanced->sanitize( 'dashicons-star-filled', $enhanced_icon ), 'a Dashicon name is kept' );
+assert( '42' === $enhanced->sanitize( '42', $enhanced_icon ), 'an attachment id is kept' );
+assert( 'https://e.com/i.png' === $enhanced->sanitize( 'https://e.com/i.png', $enhanced_icon ), 'a URL is kept' );
+
+// The value lands in a class attribute or a src attribute wherever a theme
+// prints it, so anything that is none of the three has to be discarded.
+assert( '' === $enhanced->sanitize( 'dashicons-x" onload="alert(1)', $enhanced_icon ), 'an injected attribute is rejected' );
+assert( '' === $enhanced->sanitize( 'javascript:alert(1)', $enhanced_icon ), 'a javascript URL is rejected' );
+
 echo "types-check: OK\n";

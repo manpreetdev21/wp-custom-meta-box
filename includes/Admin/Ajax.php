@@ -52,6 +52,7 @@ final class Ajax extends Module {
 		add_action( 'wp_ajax_wpcmb_repeater_csv_import', array( $this, 'csv_import' ) );
 		add_action( 'wp_ajax_wpcmb_block_form', array( $this, 'block_form' ) );
 		add_action( 'wp_ajax_wpcmb_location_search', array( $this, 'location_search' ) );
+		add_action( 'wp_ajax_wpcmb_embed_preview', array( $this, 'embed_preview' ) );
 	}
 
 	/**
@@ -330,6 +331,40 @@ final class Ajax extends Module {
 				'columns' => array_values( $map ),
 			)
 		);
+	}
+
+	/**
+	 * Return the oEmbed markup for a URL, so the editor sees it before saving.
+	 *
+	 * Done on the server because that is where oEmbed already lives: provider
+	 * matching, the allow-list of providers and the response cache are all
+	 * WordPress's, and none of them exist in the browser. The allow-list is
+	 * also what stops this being a general-purpose fetcher pointed at anything
+	 * the request names.
+	 */
+	public function embed_preview(): void {
+		check_ajax_referer( self::NONCE, 'nonce' );
+
+		// Editing capability, not just being signed in: this makes an outbound
+		// request on the site's behalf, so a subscriber should not reach it.
+		if ( ! current_user_can( 'edit_posts' ) ) {
+			wp_send_json_error( array( 'message' => __( 'You cannot preview embeds.', 'wp-custom-meta-box' ) ), 403 );
+		}
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- check_ajax_referer() above.
+		$url = isset( $_POST['url'] ) ? sanitize_url( wp_unslash( $_POST['url'] ) ) : '';
+
+		if ( '' === $url ) {
+			wp_send_json_error( array( 'message' => __( 'No URL was given.', 'wp-custom-meta-box' ) ), 400 );
+		}
+
+		$html = wp_oembed_get( $url );
+
+		if ( ! is_string( $html ) || '' === $html ) {
+			wp_send_json_error( array( 'message' => __( 'Nothing could be embedded from that URL.', 'wp-custom-meta-box' ) ), 404 );
+		}
+
+		wp_send_json_success( array( 'html' => wp_kses_post( $html ) ) );
 	}
 
 	/**

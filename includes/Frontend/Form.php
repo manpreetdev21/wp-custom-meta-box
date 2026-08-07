@@ -196,15 +196,21 @@ final class Form extends Module {
 
 		wp_enqueue_script( 'wpcmb-fields', WPCMB_URL . 'assets/js/fields.js', array(), Assets::version( 'assets/js/fields.js' ), true );
 		wp_enqueue_script( 'wpcmb-form', WPCMB_URL . 'assets/js/form.js', array( 'wpcmb-fields' ), Assets::version( 'assets/js/form.js' ), true );
+		wp_enqueue_script( Assets::CODES_HANDLE, WPCMB_URL . 'assets/js/codes.js', array(), Assets::version( 'assets/js/codes.js' ), true );
+		wp_enqueue_script( Assets::ENHANCED_HANDLE, WPCMB_URL . 'assets/js/enhanced.js', array( 'wpcmb-fields', Assets::CODES_HANDLE ), Assets::version( 'assets/js/enhanced.js' ), true );
 
 		wp_localize_script(
 			'wpcmb-fields',
 			'wpcmbFields',
 			array(
+				// No ajaxUrl and no Dashicons list: the embed preview endpoint
+				// requires an editing capability, and the icon picker is an
+				// admin control. Both degrade to the plain input out here.
 				'i18n' => array(
-					'remove'       => __( 'Remove', 'wp-custom-meta-box' ),
-					'selectMedia'  => __( 'Select media', 'wp-custom-meta-box' ),
-					'embedPending' => __( 'The preview appears after saving.', 'wp-custom-meta-box' ),
+					'remove'             => __( 'Remove', 'wp-custom-meta-box' ),
+					'selectMedia'        => __( 'Select media', 'wp-custom-meta-box' ),
+					'qrTooLong'          => __( 'That is too long to fit in a QR code.', 'wp-custom-meta-box' ),
+					'barcodeUnsupported' => __( 'A barcode can only hold plain ASCII characters.', 'wp-custom-meta-box' ),
 				),
 			)
 		);

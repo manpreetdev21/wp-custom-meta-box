@@ -148,6 +148,8 @@ final class Registry extends Module {
 		'button_label'       => 'appearance',
 		'row_label'          => 'appearance',
 		'toggle_label'       => 'appearance',
+		'on_label'           => 'appearance',
+		'off_label'          => 'appearance',
 		'empty_label'        => 'appearance',
 		'collapse_after'     => 'appearance',
 		'new_lines'          => 'appearance',

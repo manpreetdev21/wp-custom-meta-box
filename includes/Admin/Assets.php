@@ -10,6 +10,7 @@ declare( strict_types=1 );
 namespace WPCMB\Admin;
 
 use WPCMB\Abstracts\Module;
+use WPCMB\FieldTypes\Enhanced;
 use WPCMB\Fields\Context;
 use WPCMB\Fields\Locations;
 use WPCMB\Fields\ObjectRef;
@@ -47,6 +48,16 @@ final class Assets extends Module {
 	 * Handle for the repeater script.
 	 */
 	public const REPEATER_HANDLE = 'wpcmb-repeater';
+
+	/**
+	 * Handle for the QR and barcode encoders.
+	 */
+	public const CODES_HANDLE = 'wpcmb-codes';
+
+	/**
+	 * Handle for the advanced field controls.
+	 */
+	public const ENHANCED_HANDLE = 'wpcmb-enhanced';
 
 	/**
 	 * The cache-busting version for an asset.
@@ -289,12 +300,40 @@ final class Assets extends Module {
 			self::FIELDS_HANDLE,
 			'wpcmbFields',
 			array(
-				'i18n' => array(
-					'remove'       => __( 'Remove', 'wp-custom-meta-box' ),
-					'selectMedia'  => __( 'Select media', 'wp-custom-meta-box' ),
-					'embedPending' => __( 'The preview appears after saving.', 'wp-custom-meta-box' ),
+				'ajaxUrl'   => admin_url( 'admin-ajax.php' ),
+				'nonce'     => wp_create_nonce( Ajax::NONCE ),
+				'dashicons' => Enhanced::dashicons(),
+				'i18n'      => array(
+					'remove'             => __( 'Remove', 'wp-custom-meta-box' ),
+					'selectMedia'        => __( 'Select media', 'wp-custom-meta-box' ),
+					'iconDashicons'      => __( 'Dashicons', 'wp-custom-meta-box' ),
+					'iconMedia'          => __( 'Media Library', 'wp-custom-meta-box' ),
+					'iconUrl'            => __( 'URL', 'wp-custom-meta-box' ),
+					'iconUseUrl'         => __( 'Use this URL', 'wp-custom-meta-box' ),
+					'embedLoading'       => __( 'Loading the preview…', 'wp-custom-meta-box' ),
+					'embedNone'          => __( 'Nothing could be embedded from that URL.', 'wp-custom-meta-box' ),
+					'qrTooLong'          => __( 'That is too long to fit in a QR code.', 'wp-custom-meta-box' ),
+					'barcodeUnsupported' => __( 'A barcode can only hold plain ASCII characters.', 'wp-custom-meta-box' ),
 				),
 			)
+		);
+
+		// The encoders are separate because they are pure functions with no
+		// DOM in them, and because nothing else needs to load them.
+		wp_enqueue_script(
+			self::CODES_HANDLE,
+			WPCMB_URL . 'assets/js/codes.js',
+			array(),
+			self::version( 'assets/js/codes.js' ),
+			true
+		);
+
+		wp_enqueue_script(
+			self::ENHANCED_HANDLE,
+			WPCMB_URL . 'assets/js/enhanced.js',
+			array( self::FIELDS_HANDLE, self::CODES_HANDLE ),
+			self::version( 'assets/js/enhanced.js' ),
+			true
 		);
 
 		wp_enqueue_script(

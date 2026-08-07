@@ -1,13 +1,13 @@
 <?php
 /**
  * Plugin Name:       WP Custom Meta Box
- * Plugin URI:        https://example.com/wp-custom-meta-box
+ * Plugin URI:        https://github.com/manpreetdev21/wp-custom-meta-box
  * Description:       Field groups, meta boxes and a developer-friendly field API for WordPress.
  * Version:           1.0.0
  * Requires at least: 6.8
  * Requires PHP:      8.1
  * Author:            Manpreet Singh
- * Author URI:        https://example.com
+ * Author URI:        https://github.com/manpreetdev21/wp-custom-meta-box
  * License:           GPL-2.0-or-later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain:       wp-custom-meta-box

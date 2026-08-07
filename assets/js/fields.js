@@ -369,6 +369,53 @@
 		}
 	}
 
+	/**
+	 * Turn accordion markers into collapsible sections over the fields that
+	 * follow each one.
+	 *
+	 * Built on `<details>` rather than a button and a hidden div: open and
+	 * closed state, the disclosure triangle, keyboard operation and the
+	 * screen-reader announcement are all native, so there is nothing here to
+	 * keep in sync and nothing to get wrong on the accessibility side.
+	 *
+	 * Runs after initTabs so that an accordion inside a tab is sliced within
+	 * its panel — the sibling walk below never crosses a parent.
+	 *
+	 * @param {Element} root Group container.
+	 */
+	function initAccordions( root ) {
+		root.querySelectorAll( '[data-wpcmb-accordion]' ).forEach( function ( marker ) {
+			var wrapper = marker.closest( '.wpcmb-field' );
+
+			if ( ! wrapper ) {
+				return;
+			}
+
+			var details = document.createElement( 'details' );
+			details.className = 'wpcmb-accordion';
+			details.open = '1' === marker.dataset.wpcmbOpen;
+
+			var summary = document.createElement( 'summary' );
+			summary.className = 'wpcmb-accordion__summary';
+			summary.textContent = marker.dataset.wpcmbLabel || '';
+
+			var body = document.createElement( 'div' );
+			body.className = 'wpcmb-accordion__body';
+
+			var sibling = wrapper.nextElementSibling;
+
+			while ( sibling && ! sibling.querySelector( '[data-wpcmb-accordion]' ) ) {
+				var next = sibling.nextElementSibling;
+				body.appendChild( sibling );
+				sibling = next;
+			}
+
+			details.appendChild( summary );
+			details.appendChild( body );
+			wrapper.replaceWith( details );
+		} );
+	}
+
 	/* --------------------------------------------------------------------
 	 * Small per-type enhancements.
 	 * ----------------------------------------------------------------- */
@@ -454,15 +501,6 @@
 			}
 		} );
 
-		root.querySelectorAll( '[data-wpcmb-enhanced="embed"]' ).forEach( function ( wrapper ) {
-			var input = wrapper.querySelector( 'input' );
-			var preview = wrapper.querySelector( '.wpcmb-enhanced__preview' );
-
-			input.addEventListener( 'change', function () {
-				preview.textContent = input.value ? config.i18n.embedPending : '';
-			} );
-		} );
-
 		/**
 		 * Fires once field enhancements have run.
 		 *
@@ -487,7 +525,10 @@
 	function init( root ) {
 		root = root || document;
 
+		// Tabs first: an accordion inside a tab has to be sliced within its
+		// panel, and the panel does not exist until initTabs has built it.
 		root.querySelectorAll( '.wpcmb-group-fields' ).forEach( initTabs );
+		root.querySelectorAll( '.wpcmb-group-fields' ).forEach( initAccordions );
 		root.querySelectorAll( '[data-wpcmb-media]' ).forEach( initMedia );
 
 		initColors( root );

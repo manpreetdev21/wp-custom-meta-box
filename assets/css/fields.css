@@ -270,15 +270,13 @@ input.wpcmb-input[type="datetime-local"] {
 	gap: 5px;
 }
 
-.wpcmb-choices--button_group,
-.wpcmb-choices--rating {
+.wpcmb-choices--button_group {
 	flex-direction: row;
 	flex-wrap: wrap;
 	gap: 0;
 }
 
-.wpcmb-choices--button_group .wpcmb-choice,
-.wpcmb-choices--rating .wpcmb-choice {
+.wpcmb-choices--button_group .wpcmb-choice {
 	border: 1px solid var( --wpcmb-border );
 	cursor: pointer;
 	margin-inline-end: -1px;
@@ -286,38 +284,32 @@ input.wpcmb-input[type="datetime-local"] {
 	transition: background-color 0.12s ease;
 }
 
-.wpcmb-choices--button_group .wpcmb-choice:first-child,
-.wpcmb-choices--rating .wpcmb-choice:first-child {
+.wpcmb-choices--button_group .wpcmb-choice:first-child {
 	border-radius: var( --wpcmb-radius ) 0 0 var( --wpcmb-radius );
 }
 
-.wpcmb-choices--button_group .wpcmb-choice:last-child,
-.wpcmb-choices--rating .wpcmb-choice:last-child {
+.wpcmb-choices--button_group .wpcmb-choice:last-child {
 	border-radius: 0 var( --wpcmb-radius ) var( --wpcmb-radius ) 0;
 }
 
-.wpcmb-choices--button_group .wpcmb-choice input,
-.wpcmb-choices--rating .wpcmb-choice input {
+.wpcmb-choices--button_group .wpcmb-choice input {
 	position: absolute;
 	opacity: 0;
 	pointer-events: none;
 }
 
-.wpcmb-choices--button_group .wpcmb-choice:hover,
-.wpcmb-choices--rating .wpcmb-choice:hover {
+.wpcmb-choices--button_group .wpcmb-choice:hover {
 	background: var( --wpcmb-accent-tint );
 }
 
-.wpcmb-choices--button_group .wpcmb-choice:has( input:checked ),
-.wpcmb-choices--rating .wpcmb-choice:has( input:checked ) {
+.wpcmb-choices--button_group .wpcmb-choice:has( input:checked ) {
 	background: var( --wpcmb-accent );
 	border-color: var( --wpcmb-accent );
 	color: #fff;
 }
 
 /* The hidden radio still owns focus, so the label has to show it. */
-.wpcmb-choices--button_group .wpcmb-choice:has( input:focus-visible ),
-.wpcmb-choices--rating .wpcmb-choice:has( input:focus-visible ) {
+.wpcmb-choices--button_group .wpcmb-choice:has( input:focus-visible ) {
 	outline: 2px solid var( --wpcmb-accent );
 	outline-offset: 1px;
 	position: relative;
@@ -384,6 +376,140 @@ input.wpcmb-input[type="datetime-local"] {
 	margin: 0;
 }
 
+/*
+ * Switch, for the toggle and true/false types. The real checkbox is present
+ * and focusable — only its box is hidden — so the label association, the
+ * space key and the posted value are all the browser's own.
+ */
+
+.wpcmb-switch {
+	align-items: center;
+	cursor: pointer;
+	display: inline-flex;
+	gap: 9px;
+}
+
+.wpcmb-switch__input {
+	position: absolute;
+	opacity: 0;
+	pointer-events: none;
+}
+
+.wpcmb-switch__track {
+	background: var( --wpcmb-border-strong );
+	border-radius: 999px;
+	flex: 0 0 auto;
+	height: 22px;
+	position: relative;
+	transition: background-color 0.15s ease;
+	width: 40px;
+}
+
+.wpcmb-switch__track::after {
+	background: #fff;
+	border-radius: 50%;
+	box-shadow: 0 1px 3px rgba( 0, 0, 0, 0.3 );
+	content: "";
+	height: 16px;
+	inset-block-start: 3px;
+	inset-inline-start: 3px;
+	position: absolute;
+	transition: inset-inline-start 0.15s ease;
+	width: 16px;
+}
+
+.wpcmb-switch__input:checked + .wpcmb-switch__track {
+	background: var( --wpcmb-accent );
+}
+
+.wpcmb-switch__input:checked + .wpcmb-switch__track::after {
+	inset-inline-start: 21px;
+}
+
+.wpcmb-switch__input:focus-visible + .wpcmb-switch__track {
+	outline: 2px solid var( --wpcmb-accent );
+	outline-offset: 2px;
+}
+
+.wpcmb-switch__input:disabled + .wpcmb-switch__track {
+	opacity: 0.5;
+}
+
+/*
+ * True/false names both states, so the label has to change with the switch.
+ * Done in CSS from the two data attributes rather than in script: there is no
+ * state to keep, and it stays correct if the box is toggled by anything else.
+ */
+.wpcmb-switch__input:checked ~ .wpcmb-switch__label[data-wpcmb-on]:not( [data-wpcmb-on=""] ) {
+	font-size: 0;
+}
+
+.wpcmb-switch__input:checked ~ .wpcmb-switch__label[data-wpcmb-on]:not( [data-wpcmb-on=""] )::after {
+	content: attr( data-wpcmb-on );
+	font-size: 13px;
+}
+
+.wpcmb-switch__input:not( :checked ) ~ .wpcmb-switch__label[data-wpcmb-off]:not( [data-wpcmb-off=""] ) {
+	font-size: 0;
+}
+
+.wpcmb-switch__input:not( :checked ) ~ .wpcmb-switch__label[data-wpcmb-off]:not( [data-wpcmb-off=""] )::after {
+	content: attr( data-wpcmb-off );
+	font-size: 13px;
+}
+
+/*
+ * Rating: stars rather than the numbers 1..n. The whole row lights up to the
+ * hovered or selected star, which is what makes it read as a rating instead
+ * of a row of separate buttons — done with direction reversal so plain CSS
+ * sibling selectors can reach "every star before this one".
+ */
+
+.wpcmb-choices--rating {
+	align-items: center;
+	flex-direction: row-reverse;
+	gap: 2px;
+	justify-content: flex-end;
+}
+
+.wpcmb-choices--rating .wpcmb-choice {
+	background: none;
+	border: 0;
+	border-radius: 3px;
+	color: var( --wpcmb-border-strong );
+	font-size: 0;
+	line-height: 1;
+	margin: 0;
+	padding: 2px;
+	transition: color 0.1s ease;
+}
+
+.wpcmb-choices--rating .wpcmb-choice::before {
+	content: "\f154";
+	font-family: dashicons, sans-serif;
+	font-size: 22px;
+}
+
+.wpcmb-choices--rating .wpcmb-choice:hover::before,
+.wpcmb-choices--rating .wpcmb-choice:hover ~ .wpcmb-choice::before,
+.wpcmb-choices--rating .wpcmb-choice:has( input:checked )::before,
+.wpcmb-choices--rating .wpcmb-choice:has( input:checked ) ~ .wpcmb-choice::before {
+	content: "\f155";
+}
+
+.wpcmb-choices--rating .wpcmb-choice:hover,
+.wpcmb-choices--rating .wpcmb-choice:hover ~ .wpcmb-choice,
+.wpcmb-choices--rating .wpcmb-choice:has( input:checked ),
+.wpcmb-choices--rating .wpcmb-choice:has( input:checked ) ~ .wpcmb-choice {
+	background: none;
+	color: #dba617;
+}
+
+.wpcmb-choices--rating .wpcmb-choice:has( input:focus-visible ) {
+	outline: 2px solid var( --wpcmb-accent );
+	outline-offset: 1px;
+}
+
 /* Composite types. */
 
 .wpcmb-link__row,
@@ -423,10 +549,242 @@ input.wpcmb-input[type="datetime-local"] {
 	max-width: 100%;
 }
 
-.wpcmb-enhanced--signature canvas {
+.wpcmb-enhanced__preview svg {
+	max-width: 100%;
+}
+
+/* Accordion. */
+
+.wpcmb-accordion {
+	background: var( --wpcmb-surface );
 	border: 1px solid var( --wpcmb-border );
 	border-radius: var( --wpcmb-radius );
+	flex: 1 0 100%;
+}
+
+.wpcmb-accordion__summary {
+	background: var( --wpcmb-sunken );
+	border-radius: calc( var( --wpcmb-radius ) - 1px );
+	cursor: pointer;
+	font-weight: 600;
+	list-style-position: inside;
+	padding: 9px 12px;
+	user-select: none;
+}
+
+.wpcmb-accordion__summary:hover {
+	color: var( --wpcmb-accent );
+}
+
+.wpcmb-accordion__summary:focus-visible {
+	outline: 2px solid var( --wpcmb-accent );
+	outline-offset: -2px;
+}
+
+.wpcmb-accordion[open] > .wpcmb-accordion__summary {
+	border-bottom: 1px solid var( --wpcmb-border );
+	border-radius: calc( var( --wpcmb-radius ) - 1px ) calc( var( --wpcmb-radius ) - 1px ) 0 0;
+}
+
+.wpcmb-accordion__body {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var( --wpcmb-field-gap );
+	padding: 14px;
+}
+
+/* Icon picker. */
+
+.wpcmb-icon {
+	align-items: center;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	position: relative;
+}
+
+.wpcmb-icon__current {
+	align-items: center;
+	display: inline-flex;
+	justify-content: center;
+	min-height: 32px;
+	min-width: 32px;
+}
+
+.wpcmb-icon__current:empty {
+	background: var( --wpcmb-sunken );
+	border: 1px dashed var( --wpcmb-border-strong );
+	border-radius: var( --wpcmb-radius );
+}
+
+/*
+ * Sized through our own class, never through `.dashicons`: that class belongs
+ * to core and is on thousands of elements this plugin has nothing to do with.
+ */
+.wpcmb-icon__glyph {
+	font-size: 26px;
+	height: 26px;
+	width: 26px;
+}
+
+.wpcmb-icon__current img {
+	border-radius: 2px;
+	height: 32px;
+	object-fit: contain;
+	width: 32px;
+}
+
+.wpcmb-icon__picker {
+	background: var( --wpcmb-surface );
+	border: 1px solid var( --wpcmb-border );
+	border-radius: var( --wpcmb-radius );
+	box-shadow: 0 6px 20px rgba( 0, 0, 0, 0.18 );
+	flex: 1 0 100%;
+	max-width: 420px;
+	padding: 10px;
+}
+
+.wpcmb-icon__picker[hidden] {
+	display: none;
+}
+
+.wpcmb-icon__tabs {
+	border-bottom: 1px solid var( --wpcmb-border );
+	display: flex;
+	gap: 2px;
+	margin-bottom: 10px;
+}
+
+.wpcmb-icon__tab {
+	background: none;
+	border: 1px solid transparent;
+	border-bottom: 0;
+	border-radius: var( --wpcmb-radius ) var( --wpcmb-radius ) 0 0;
+	color: var( --wpcmb-muted );
+	cursor: pointer;
+	font-weight: 600;
+	margin-bottom: -1px;
+	padding: 6px 12px;
+}
+
+.wpcmb-icon__tab.is-active {
+	background: var( --wpcmb-surface );
+	border-color: var( --wpcmb-border );
+	border-bottom-color: var( --wpcmb-surface );
+	color: inherit;
+}
+
+.wpcmb-icon__grid {
+	display: grid;
+	gap: 2px;
+	grid-template-columns: repeat( auto-fill, minmax( 34px, 1fr ) );
+	max-height: 260px;
+	overflow-y: auto;
+}
+
+.wpcmb-icon__grid[hidden],
+.wpcmb-icon__panel[hidden] {
+	display: none;
+}
+
+.wpcmb-icon__option {
+	align-items: center;
+	background: none;
+	border: 1px solid transparent;
+	border-radius: var( --wpcmb-radius );
+	color: inherit;
+	cursor: pointer;
+	display: flex;
+	justify-content: center;
+	padding: 5px;
+}
+
+.wpcmb-icon__option:hover,
+.wpcmb-icon__option:focus-visible {
+	background: var( --wpcmb-accent-tint );
+	border-color: var( --wpcmb-accent );
+	color: var( --wpcmb-accent );
+}
+
+.wpcmb-icon__panel {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+
+/* Signature. */
+
+.wpcmb-signature__pad {
+	background: var( --wpcmb-surface );
+	border: 1px solid var( --wpcmb-border-strong );
+	border-radius: var( --wpcmb-radius );
+	cursor: crosshair;
+	display: block;
+	height: auto;
+	max-width: 100%;
+
+	/* Without this a finger scrolls the page instead of drawing. */
 	touch-action: none;
+}
+
+.wpcmb-signature__actions {
+	align-items: center;
+	display: flex;
+	gap: 10px;
+	margin: 8px 0 0;
+}
+
+.wpcmb-signature__hint {
+	color: var( --wpcmb-muted );
+	font-size: 12px;
+}
+
+/* Map. */
+
+.wpcmb-map {
+	display: grid;
+	gap: 0 12px;
+	grid-template-columns: repeat( auto-fit, minmax( 160px, 1fr ) );
+}
+
+.wpcmb-map__row {
+	margin: 0 0 8px;
+}
+
+.wpcmb-map__row label {
+	display: block;
+	font-size: 12px;
+	font-weight: 600;
+	margin-bottom: 3px;
+}
+
+.wpcmb-map__row--wide,
+.wpcmb-map__actions {
+	grid-column: 1 / -1;
+}
+
+.wpcmb-map__actions {
+	align-items: center;
+	display: flex;
+	gap: 12px;
+	margin: 0;
+}
+
+/* Barcode and QR. */
+
+.wpcmb-enhanced--qr .wpcmb-enhanced__preview,
+.wpcmb-enhanced--barcode .wpcmb-enhanced__preview {
+	background: #fff;
+	border: 1px solid var( --wpcmb-border );
+	border-radius: var( --wpcmb-radius );
+	color: #000;
+	display: inline-block;
+	padding: 8px;
+}
+
+.wpcmb-enhanced--barcode .wpcmb-enhanced__preview {
+	display: block;
+	max-width: 420px;
 }
 
 /* Repeater. */

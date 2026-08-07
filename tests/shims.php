@@ -522,8 +522,17 @@ function sanitize_url( string $url ): string {
 		return '';
 	}
 
-	if ( str_starts_with( $url, '/' ) || str_starts_with( $url, '#' ) || 1 === preg_match( '#^[a-z][a-z0-9+.\-]*:#i', $url ) ) {
+	if ( str_starts_with( $url, '/' ) || str_starts_with( $url, '#' ) ) {
 		return $url;
+	}
+
+	// Core filters the scheme against wp_allowed_protocols() and returns an
+	// empty string for anything else. A shim that waves every scheme through
+	// makes `javascript:` look survivable in a test and not in production.
+	if ( 1 === preg_match( '#^([a-z][a-z0-9+.\-]*):#i', $url, $scheme ) ) {
+		$allowed = array( 'http', 'https', 'ftp', 'ftps', 'mailto', 'news', 'irc', 'gopher', 'nntp', 'feed', 'telnet', 'mms', 'rtsp', 'sms', 'svn', 'tel', 'fax', 'xmpp', 'webcal', 'urn' );
+
+		return in_array( strtolower( $scheme[1] ), $allowed, true ) ? $url : '';
 	}
 
 	return 'http://' . str_replace( ' ', '%20', $url );

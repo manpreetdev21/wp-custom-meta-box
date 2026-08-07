@@ -26,6 +26,30 @@ defined( 'ABSPATH' ) || exit;
 final class Choice extends FieldType {
 
 	/**
+	 * Types whose control is a dropdown.
+	 *
+	 * Country and region belong here for the same reason select does: their
+	 * lists run to hundreds of entries, and rendering those as radio buttons
+	 * produces a page of them.
+	 */
+	private const DROPDOWN_TYPES = array( 'select', 'country', 'state' );
+
+	/**
+	 * Types that store a single boolean.
+	 */
+	private const BOOLEAN_TYPES = array( 'toggle', 'true_false' );
+
+	/**
+	 * Option holding the site's country list, in `value : Label` lines.
+	 */
+	public const COUNTRIES_OPTION = 'wpcmb_countries';
+
+	/**
+	 * Option holding the site's region list, in `value : Label` lines.
+	 */
+	public const STATES_OPTION = 'wpcmb_states';
+
+	/**
 	 * Types this class handles.
 	 *
 	 * @return array<string, string>
@@ -36,6 +60,7 @@ final class Choice extends FieldType {
 			'checkbox'     => __( 'Checkbox', 'wp-custom-meta-box' ),
 			'radio'        => __( 'Radio', 'wp-custom-meta-box' ),
 			'toggle'       => __( 'Toggle', 'wp-custom-meta-box' ),
+			'true_false'   => __( 'True / False', 'wp-custom-meta-box' ),
 			'button_group' => __( 'Button Group', 'wp-custom-meta-box' ),
 			'rating'       => __( 'Rating', 'wp-custom-meta-box' ),
 			'country'      => __( 'Country', 'wp-custom-meta-box' ),
@@ -65,6 +90,7 @@ final class Choice extends FieldType {
 			'select'       => 'dashicons-menu-alt',
 			'state'        => 'dashicons-location',
 			'toggle'       => 'dashicons-controls-play',
+			'true_false'   => 'dashicons-yes',
 		);
 
 		return $icons[ $type ] ?? 'dashicons-menu-alt';
@@ -84,12 +110,12 @@ final class Choice extends FieldType {
 		$multiple = $this->is_multiple( $field );
 		$selected = $this->as_list( $value );
 
-		if ( 'toggle' === $type ) {
-			$this->render_toggle( $field, $selected, $input_name, $input_id );
+		if ( in_array( $type, self::BOOLEAN_TYPES, true ) ) {
+			$this->render_toggle( $field, $type, $selected, $input_name, $input_id );
 			return;
 		}
 
-		if ( 'select' === $type ) {
+		if ( in_array( $type, self::DROPDOWN_TYPES, true ) ) {
 			$this->render_select( $field, $choices, $selected, $input_name, $input_id, $multiple );
 			return;
 		}
@@ -154,6 +180,14 @@ final class Choice extends FieldType {
 		$control = 'checkbox' === $type ? 'checkbox' : 'radio';
 		$index   = 0;
 
+		// A rating is emitted highest-first so that the stylesheet can light
+		// up every star below the hovered one. CSS can only reach *later*
+		// siblings, so "the stars before this one" has to mean later in the
+		// markup; the row is then displayed reversed to read 1..n again.
+		if ( 'rating' === $type ) {
+			$choices = array_reverse( $choices, true );
+		}
+
 		printf(
 			'<div class="wpcmb-choices wpcmb-choices--%s" role="group" aria-labelledby="%s-label">',
 			esc_attr( $type ),
@@ -187,23 +221,43 @@ final class Choice extends FieldType {
 	}
 
 	/**
-	 * Render a single on/off toggle.
+	 * Render a single on/off switch.
+	 *
+	 * Toggle and true/false store the same boolean and differ only in what
+	 * they say beside the switch: a toggle carries whatever label the field
+	 * sets, true/false names both states so the off position reads as a
+	 * deliberate "no" rather than an unanswered question.
+	 *
+	 * The switch is a real checkbox with the box visually hidden, so keyboard
+	 * operation, the label association and the form value are all the
+	 * browser's own.
 	 *
 	 * @param array<string, mixed> $field      Field definition.
+	 * @param string               $type       Type name.
 	 * @param array<int, string>   $selected   Selected values.
 	 * @param string               $input_name Input name.
 	 * @param string               $input_id   Input id.
 	 */
-	private function render_toggle( array $field, array $selected, string $input_name, string $input_id ): void {
+	private function render_toggle( array $field, string $type, array $selected, string $input_name, string $input_id ): void {
+		$on = in_array( '1', $selected, true );
+
+		$label = 'true_false' === $type
+			? (string) $this->setting( $field, $on ? 'on_label' : 'off_label', $on ? __( 'True', 'wp-custom-meta-box' ) : __( 'False', 'wp-custom-meta-box' ) )
+			: (string) $this->setting( $field, 'toggle_label', '' );
+
+		// An unchecked checkbox posts nothing, which is indistinguishable from
+		// "the field was not on the form". This says it was, and was left off.
 		printf(
 			'<input type="hidden" name="%s" value="0" />
-			<label class="wpcmb-toggle" for="%s"><input type="checkbox" id="%s" name="%s" value="1"%s /> <span>%s</span></label>',
+			<label class="wpcmb-switch" for="%s"><input type="checkbox" class="wpcmb-switch__input" id="%s" name="%s" value="1"%s /><span class="wpcmb-switch__track" aria-hidden="true"></span><span class="wpcmb-switch__label" data-wpcmb-on="%s" data-wpcmb-off="%s">%s</span></label>',
 			esc_attr( $input_name ),
 			esc_attr( $input_id ),
 			esc_attr( $input_id ),
 			esc_attr( $input_name ),
-			in_array( '1', $selected, true ) ? ' checked' : '',
-			esc_html( (string) $this->setting( $field, 'toggle_label', '' ) )
+			$on ? ' checked' : '',
+			esc_attr( 'true_false' === $type ? (string) $this->setting( $field, 'on_label', __( 'True', 'wp-custom-meta-box' ) ) : '' ),
+			esc_attr( 'true_false' === $type ? (string) $this->setting( $field, 'off_label', __( 'False', 'wp-custom-meta-box' ) ) : '' ),
+			esc_html( $label )
 		);
 	}
 
@@ -218,7 +272,7 @@ final class Choice extends FieldType {
 	public function sanitize( mixed $value, array $field ): mixed {
 		$type = (string) ( $field['type'] ?? 'select' );
 
-		if ( 'toggle' === $type ) {
+		if ( in_array( $type, self::BOOLEAN_TYPES, true ) ) {
 			return ! empty( $value ) && '0' !== $value;
 		}
 
@@ -242,7 +296,7 @@ final class Choice extends FieldType {
 	 * @return mixed
 	 */
 	public function format( mixed $value, array $field ): mixed {
-		if ( 'toggle' === ( $field['type'] ?? '' ) ) {
+		if ( in_array( (string) ( $field['type'] ?? '' ), self::BOOLEAN_TYPES, true ) ) {
 			return (bool) $value;
 		}
 
@@ -276,6 +330,21 @@ final class Choice extends FieldType {
 			);
 		}
 
+		if ( 'true_false' === $type ) {
+			return array(
+				'on_label'  => array(
+					'label' => __( 'Label when on', 'wp-custom-meta-box' ),
+					'type'  => 'text',
+					'help'  => __( 'Defaults to True.', 'wp-custom-meta-box' ),
+				),
+				'off_label' => array(
+					'label' => __( 'Label when off', 'wp-custom-meta-box' ),
+					'type'  => 'text',
+					'help'  => __( 'Defaults to False.', 'wp-custom-meta-box' ),
+				),
+			);
+		}
+
 		$schema = array();
 
 		if ( ! in_array( $type, array( 'country', 'state', 'rating' ), true ) ) {
@@ -293,7 +362,7 @@ final class Choice extends FieldType {
 			);
 		}
 
-		if ( in_array( $type, array( 'select', 'checkbox' ), true ) ) {
+		if ( in_array( $type, array( 'select', 'checkbox', 'country', 'state' ), true ) ) {
 			$schema['multiple'] = array(
 				'label' => __( 'Allow multiple', 'wp-custom-meta-box' ),
 				'type'  => 'toggle',
@@ -338,7 +407,7 @@ final class Choice extends FieldType {
 			return '0' !== (string) $this->setting( $field, 'multiple', '1' );
 		}
 
-		return 'select' === $type && ! empty( $this->setting( $field, 'multiple', '' ) );
+		return in_array( $type, self::DROPDOWN_TYPES, true ) && ! empty( $this->setting( $field, 'multiple', '' ) );
 	}
 
 	/**
@@ -437,41 +506,70 @@ final class Choice extends FieldType {
 	}
 
 	/**
-	 * A short country list, using WordPress's own locale data.
+	 * The country list.
 	 *
-	 * Deliberately not a bundled ISO table: sites that need the full list
-	 * have one already (WooCommerce, a locale plugin) and can supply it
-	 * through `wpcmb/field/choices` rather than carrying a second copy here.
+	 * Three sources in order of authority: the list edited on the settings
+	 * screen, then WooCommerce if it is running its own store countries, then
+	 * the bundled ISO 3166-1 table. The site's own list wins over WooCommerce
+	 * because someone who typed a list meant it.
 	 *
 	 * @return array<string, string>
 	 */
 	private function countries(): array {
-		$countries = array();
+		$managed = $this->managed_list( self::COUNTRIES_OPTION );
 
-		foreach ( array( 'AU', 'CA', 'DE', 'ES', 'FR', 'IN', 'IT', 'JP', 'NL', 'NZ', 'SG', 'GB', 'US' ) as $code ) {
-			$countries[ $code ] = $code;
+		if ( array() !== $managed ) {
+			return $managed;
 		}
 
 		if ( function_exists( 'WC' ) && method_exists( WC()->countries, 'get_countries' ) ) {
 			$countries = WC()->countries->get_countries();
+
+			if ( is_array( $countries ) && array() !== $countries ) {
+				return $countries;
+			}
 		}
 
-		return $countries;
+		return (array) require __DIR__ . '/../Fields/data/countries.php';
 	}
 
 	/**
-	 * Regions, empty unless a source supplies them.
+	 * The region list, resolved the same way as countries.
 	 *
 	 * @return array<string, string>
 	 */
 	private function states(): array {
+		$managed = $this->managed_list( self::STATES_OPTION );
+
+		if ( array() !== $managed ) {
+			return $managed;
+		}
+
 		if ( function_exists( 'WC' ) && method_exists( WC()->countries, 'get_states' ) ) {
 			$states = WC()->countries->get_states( (string) WC()->countries->get_base_country() );
 
-			return is_array( $states ) ? $states : array();
+			if ( is_array( $states ) && array() !== $states ) {
+				return $states;
+			}
 		}
 
-		return array();
+		return (array) require __DIR__ . '/../Fields/data/states.php';
+	}
+
+	/**
+	 * Read one of the site-managed lists.
+	 *
+	 * Stored as the same `value : Label` lines the choices setting uses, so
+	 * there is one format to learn and one parser to trust.
+	 *
+	 * @param string $option Option name.
+	 *
+	 * @return array<string, string>
+	 */
+	private function managed_list( string $option ): array {
+		$raw = get_option( $option, '' );
+
+		return is_string( $raw ) ? $this->parse_choices( $raw ) : array();
 	}
 
 	/**

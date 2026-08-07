@@ -10,6 +10,7 @@ declare( strict_types=1 );
 namespace WPCMB\Admin;
 
 use WPCMB\Abstracts\Module;
+use WPCMB\FieldTypes\Choice;
 use WPCMB\PostTypes\FieldGroupPostType;
 
 defined( 'ABSPATH' ) || exit;
@@ -109,6 +110,132 @@ final class SettingsPage extends Module {
 			array( $this, 'render_uninstall_field' ),
 			self::SLUG,
 			'wpcmb_general'
+		);
+
+		$this->register_list_settings();
+	}
+
+	/**
+	 * Declare the editable country and region lists.
+	 *
+	 * Kept as free text in the same `value : Label` form the choices setting
+	 * uses rather than a row-per-entry builder: these lists are pasted and
+	 * bulk-edited far more often than they are picked at one by one, and a
+	 * textarea is the control that makes that easy.
+	 */
+	private function register_list_settings(): void {
+		foreach ( array( Choice::COUNTRIES_OPTION, Choice::STATES_OPTION ) as $option ) {
+			register_setting(
+				self::OPTION_GROUP,
+				$option,
+				array(
+					'type'              => 'string',
+					'default'           => '',
+					'sanitize_callback' => array( $this, 'sanitize_list' ),
+				)
+			);
+		}
+
+		add_settings_section(
+			'wpcmb_lists',
+			__( 'Country and region lists', 'wp-custom-meta-box' ),
+			array( $this, 'render_lists_intro' ),
+			self::SLUG
+		);
+
+		add_settings_field(
+			Choice::COUNTRIES_OPTION,
+			__( 'Countries', 'wp-custom-meta-box' ),
+			array( $this, 'render_countries_field' ),
+			self::SLUG,
+			'wpcmb_lists',
+			array( 'label_for' => Choice::COUNTRIES_OPTION )
+		);
+
+		add_settings_field(
+			Choice::STATES_OPTION,
+			__( 'States / regions', 'wp-custom-meta-box' ),
+			array( $this, 'render_states_field' ),
+			self::SLUG,
+			'wpcmb_lists',
+			array( 'label_for' => Choice::STATES_OPTION )
+		);
+	}
+
+	/**
+	 * Clean a submitted list.
+	 *
+	 * Line breaks have to survive, so this is not sanitize_textarea_field:
+	 * each line is cleaned on its own and the structure is rebuilt.
+	 *
+	 * @param mixed $value Submitted value.
+	 */
+	public function sanitize_list( $value ): string {
+		if ( ! is_string( $value ) ) {
+			return '';
+		}
+
+		$lines = array_filter(
+			array_map(
+				static fn( $line ): string => trim( sanitize_text_field( $line ) ),
+				(array) preg_split( '/\r\n|\r|\n/', $value )
+			),
+			static fn( $line ): bool => '' !== $line
+		);
+
+		return implode( "\n", $lines );
+	}
+
+	/**
+	 * Explain what the two lists do.
+	 */
+	public function render_lists_intro(): void {
+		printf(
+			'<p class="description">%s</p>',
+			esc_html__(
+				'One entry per line, as "value : Label" — for example "FR : France". The value is what gets stored; the label is what editors see. Leave a list empty to use the built-in one.',
+				'wp-custom-meta-box'
+			)
+		);
+	}
+
+	/**
+	 * Render the countries list control.
+	 */
+	public function render_countries_field(): void {
+		$this->render_list_field(
+			Choice::COUNTRIES_OPTION,
+			"FR : France\nDE : Germany",
+			__( 'Adds to or replaces the built-in ISO country list.', 'wp-custom-meta-box' )
+		);
+	}
+
+	/**
+	 * Render the regions list control.
+	 */
+	public function render_states_field(): void {
+		$this->render_list_field(
+			Choice::STATES_OPTION,
+			"NSW : New South Wales\nVIC : Victoria",
+			__( 'The built-in list is US states. Replace it with the regions your site actually uses.', 'wp-custom-meta-box' )
+		);
+	}
+
+	/**
+	 * Render one list textarea.
+	 *
+	 * @param string $option      Option name.
+	 * @param string $placeholder Example content.
+	 * @param string $help        Description below the control.
+	 */
+	private function render_list_field( string $option, string $placeholder, string $help ): void {
+		printf(
+			'<textarea id="%1$s" name="%1$s" class="large-text code" rows="8" placeholder="%2$s">%3$s</textarea>
+			<p class="description">%4$s</p>',
+			esc_attr( $option ),
+			esc_attr( $placeholder ),
+			esc_textarea( (string) get_option( $option, '' ) ),
+			esc_html( $help )
 		);
 	}
 

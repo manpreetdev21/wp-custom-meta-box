@@ -279,3 +279,72 @@ test( 'initFields is exposed so dynamically added markup can be wired up', () =>
 
 	assert.equal( typeof page.window.wpcmb.initFields, 'function' );
 } );
+
+/* -------------------------------------------------------------------------
+ * Accordions.
+ *
+ * The marker span rendered and nothing ever acted on it, so an accordion and
+ * every field under it were simply absent from the page.
+ * ---------------------------------------------------------------------- */
+
+/**
+ * A page with the accordion fixture.
+ *
+ * @return {Object} The harness.
+ */
+function accordionPage() {
+	return setup( { html: fixture( 'accordion' ), scripts: [ 'fields.js' ], globals } );
+}
+
+test( 'accordion markers become collapsible sections', () => {
+	const page = accordionPage();
+
+	const sections = page.$$( '.wpcmb-accordion' );
+
+	assert.equal( sections.length, 2, 'one section per marker' );
+	assert.equal( sections[ 0 ].tagName, 'DETAILS', 'built on the native element' );
+	assert.equal(
+		sections[ 0 ].querySelector( 'summary' ).textContent,
+		'First section',
+		'the marker label becomes the summary'
+	);
+} );
+
+test( 'each section takes the fields that follow it, and no others', () => {
+	const page = accordionPage();
+
+	const sections = page.$$( '.wpcmb-accordion' );
+	const names = ( section ) =>
+		Array.from( section.querySelectorAll( '.wpcmb-field' ) ).map(
+			( field ) => field.dataset.wpcmbName
+		);
+
+	assert.deepEqual( names( sections[ 0 ] ), [ 'in_one' ] );
+	assert.deepEqual( names( sections[ 1 ] ), [ 'in_two', 'in_two_b' ] );
+} );
+
+test( 'a field before the first marker stays outside every section', () => {
+	const page = accordionPage();
+
+	const before = page.$( '.wpcmb-field[data-wpcmb-name="before"]' );
+
+	assert.ok( before, 'it is still on the page' );
+	assert.equal( before.closest( '.wpcmb-accordion' ), null, 'and not swallowed' );
+} );
+
+test( 'the open setting decides which sections start expanded', () => {
+	const page = accordionPage();
+
+	const sections = page.$$( '.wpcmb-accordion' );
+
+	assert.equal( sections[ 0 ].open, true, 'the one marked open' );
+	assert.equal( sections[ 1 ].open, false, 'and only that one' );
+} );
+
+test( 'the marker itself is gone once its section exists', () => {
+	const page = accordionPage();
+
+	// Left in place it would post nothing but would still be a stray empty
+	// field wrapper sitting between the sections.
+	assert.equal( page.$$( '[data-wpcmb-accordion]' ).length, 0 );
+} );

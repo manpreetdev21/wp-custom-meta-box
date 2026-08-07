@@ -154,6 +154,61 @@ $wpcmb_fixtures['media'] = wpcmb_fixture(
 	)
 );
 
+/* Accordion markers, which slice the fields that follow each one. */
+$wpcmb_fixtures['accordion'] = wpcmb_fixture(
+	array(
+		'title'  => 'Accordion',
+		'fields' => array(
+			array( 'key' => 'field_before000001', 'name' => 'before', 'label' => 'Before', 'type' => 'text' ),
+			array(
+				'key'      => 'field_acc100000001',
+				'name'     => 'acc_one',
+				'label'    => 'First section',
+				'type'     => 'accordion',
+				'settings' => array( 'open' => '1' ),
+			),
+			array( 'key' => 'field_inone000001', 'name' => 'in_one', 'label' => 'In one', 'type' => 'text' ),
+			array( 'key' => 'field_acc200000001', 'name' => 'acc_two', 'label' => 'Second section', 'type' => 'accordion' ),
+			array( 'key' => 'field_intwo000001', 'name' => 'in_two', 'label' => 'In two', 'type' => 'text' ),
+			array( 'key' => 'field_intwob00001', 'name' => 'in_two_b', 'label' => 'Also in two', 'type' => 'text' ),
+		),
+	)
+);
+
+/* The advanced controls, all of which a script has to upgrade. */
+$wpcmb_fixtures['advanced'] = wpcmb_fixture(
+	array(
+		'title'  => 'Advanced',
+		'fields' => array(
+			array( 'key' => 'field_icon00000001', 'name' => 'glyph', 'label' => 'Icon', 'type' => 'icon' ),
+			array( 'key' => 'field_sign00000001', 'name' => 'sign', 'label' => 'Signature', 'type' => 'signature' ),
+			array( 'key' => 'field_place0000001', 'name' => 'place', 'label' => 'Map', 'type' => 'map' ),
+			array( 'key' => 'field_qr0000000001', 'name' => 'code', 'label' => 'QR', 'type' => 'qr' ),
+			array( 'key' => 'field_bars00000001', 'name' => 'bars', 'label' => 'Barcode', 'type' => 'barcode' ),
+			array( 'key' => 'field_embed000001', 'name' => 'clip', 'label' => 'Embed', 'type' => 'embed' ),
+		),
+	)
+);
+
+/* The boolean and rating controls. */
+$wpcmb_fixtures['switches'] = wpcmb_fixture(
+	array(
+		'title'  => 'Switches',
+		'fields' => array(
+			array( 'key' => 'field_flag00000001', 'name' => 'flag', 'label' => 'Flag', 'type' => 'toggle' ),
+			array(
+				'key'      => 'field_agree000001',
+				'name'     => 'agree',
+				'label'    => 'Agree',
+				'type'     => 'true_false',
+				'settings' => array( 'on_label' => 'Yes please', 'off_label' => 'No thanks' ),
+			),
+			array( 'key' => 'field_stars00001', 'name' => 'stars', 'label' => 'Stars', 'type' => 'rating' ),
+			array( 'key' => 'field_where000001', 'name' => 'where', 'label' => 'Country', 'type' => 'country' ),
+		),
+	)
+);
+
 /* A colour field: a swatch and a hex code that have to stay in step. */
 $wpcmb_fixtures['color'] = wpcmb_fixture(
 	array(
