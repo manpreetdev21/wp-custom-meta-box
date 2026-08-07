@@ -210,7 +210,7 @@ final class FieldGroupEditor extends Module {
 			<div class="wpcmb-builder__list" data-wpcmb-list></div>
 
 			<p class="wpcmb-builder__actions">
-				<button type="button" class="button button-secondary" data-wpcmb-add-field>
+				<button type="button" class="wpcmb-btn wpcmb-btn--add" data-wpcmb-add-field>
 					<?php esc_html_e( 'Add Field', 'wp-custom-meta-box' ); ?>
 				</button>
 			</p>
@@ -245,7 +245,7 @@ final class FieldGroupEditor extends Module {
 			<div class="wpcmb-builder__list" data-wpcmb-list></div>
 
 			<p class="wpcmb-builder__actions">
-				<button type="button" class="button button-secondary" data-wpcmb-add-group>
+				<button type="button" class="wpcmb-btn wpcmb-btn--add" data-wpcmb-add-group>
 					<?php esc_html_e( 'Add Rule Group', 'wp-custom-meta-box' ); ?>
 				</button>
 			</p>

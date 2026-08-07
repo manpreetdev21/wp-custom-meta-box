@@ -213,6 +213,8 @@ final class Assets extends Module {
 					'tabAdvanced'         => __( 'Advanced', 'wp-custom-meta-box' ),
 					'wrapperClass'        => __( 'CSS class', 'wp-custom-meta-box' ),
 					'wrapperId'           => __( 'CSS id', 'wp-custom-meta-box' ),
+					'copyKey'             => __( 'Copy field name', 'wp-custom-meta-box' ),
+					'copiedKey'           => __( 'Field name copied', 'wp-custom-meta-box' ),
 					'fieldKey'            => __( 'Field key', 'wp-custom-meta-box' ),
 					'duplicateField'      => __( 'Duplicate field', 'wp-custom-meta-box' ),
 					'deleteField'         => __( 'Delete field', 'wp-custom-meta-box' ),

@@ -23,17 +23,36 @@
 .wpcmb-group-fields,
 .wpcmb-block-editor,
 .wpcmb-block__placeholder {
+	/*
+	 * The same tokens the plugin's own screens use, so a field renders
+	 * identically whether it is in the builder or in a meta box on a post.
+	 * They are repeated rather than shared because admin.css does not load
+	 * here — this file has to stand on its own on a post, term, user or
+	 * comment screen, and on the front end.
+	 */
 	--wpcmb-field-gap: 16px;
 	--wpcmb-surface: #fff;
-	--wpcmb-sunken: #f6f7f7;
-	--wpcmb-border: #dcdcde;
-	--wpcmb-border-strong: #c3c4c7;
+	--wpcmb-sunken: #f7f8f9;
+	--wpcmb-border: #e6e7e9;
+	--wpcmb-border-strong: #c9cbcf;
 	--wpcmb-muted: #646970;
+	--wpcmb-faint: #8c8f94;
 	--wpcmb-accent: var( --wp-admin-theme-color, #2271b1 );
-	--wpcmb-accent-tint: rgba( 34, 113, 177, 0.08 );
+	--wpcmb-accent-tint: rgba( 34, 113, 177, 0.07 );
 	--wpcmb-danger: #b32d2e;
 	--wpcmb-danger-tint: rgba( 179, 45, 46, 0.07 );
-	--wpcmb-radius: 4px;
+	--wpcmb-wash: rgba( 16, 20, 26, 0.05 );
+
+	--wpcmb-radius: 10px;
+	--wpcmb-radius-sm: 8px;
+	--wpcmb-radius-chip: 6px;
+
+	--wpcmb-shadow: 0 1px 2px rgba( 16, 20, 26, 0.04 ), 0 1px 3px rgba( 16, 20, 26, 0.06 );
+	--wpcmb-shadow-lg: 0 12px 32px -8px rgba( 16, 20, 26, 0.18 ), 0 2px 8px rgba( 16, 20, 26, 0.06 );
+
+	--wpcmb-ease: cubic-bezier( 0.2, 0, 0, 1 );
+	--wpcmb-fast: 150ms;
+	--wpcmb-base: 200ms;
 
 	display: flex;
 	flex-wrap: wrap;
@@ -44,15 +63,19 @@
 	.wpcmb-group-fields,
 	.wpcmb-block-editor,
 	.wpcmb-block__placeholder {
-		--wpcmb-surface: #1e1f21;
-		--wpcmb-sunken: #17181a;
-		--wpcmb-border: #3c3f44;
-		--wpcmb-border-strong: #4f5359;
+		--wpcmb-surface: #1c1e21;
+		--wpcmb-sunken: #17191c;
+		--wpcmb-border: #303338;
+		--wpcmb-border-strong: #4a4e55;
 		--wpcmb-muted: #a7aaad;
+		--wpcmb-faint: #82868b;
 		--wpcmb-accent: var( --wp-admin-theme-color, #72aee6 );
 		--wpcmb-accent-tint: rgba( 114, 174, 230, 0.12 );
 		--wpcmb-danger: #f86368;
-		--wpcmb-danger-tint: rgba( 248, 99, 104, 0.1 );
+		--wpcmb-danger-tint: rgba( 248, 99, 104, 0.12 );
+		--wpcmb-wash: rgba( 255, 255, 255, 0.07 );
+		--wpcmb-shadow: 0 1px 2px rgba( 0, 0, 0, 0.3 ), 0 1px 3px rgba( 0, 0, 0, 0.2 );
+		--wpcmb-shadow-lg: 0 12px 32px -8px rgba( 0, 0, 0, 0.6 ), 0 2px 8px rgba( 0, 0, 0, 0.3 );
 	}
 }
 
@@ -173,6 +196,115 @@
 	width: 100%;
 }
 
+/*
+ * The controls themselves.
+ *
+ * Scoped through a wrapper rather than written as `.wpcmb-input` alone: core
+ * styles inputs as `input[type=text]`, which outranks a single class, and a
+ * rule that only wins because of load order is a rule that stops working the
+ * day something enqueues after us.
+ *
+ * `.wpcmb-input` is on our own elements only, so none of this can reach a
+ * control belonging to core or another plugin.
+ */
+.wpcmb-group-fields .wpcmb-input,
+.wpcmb-block-editor .wpcmb-input,
+.wpcmb-form .wpcmb-input {
+	background: var( --wpcmb-surface );
+	border: 1px solid var( --wpcmb-border-strong );
+	border-radius: var( --wpcmb-radius-sm );
+	box-shadow: none;
+	color: inherit;
+	font-size: 14px;
+	line-height: 1.5;
+	min-height: 36px;
+	padding: 6px 11px;
+	transition: border-color var( --wpcmb-fast ) var( --wpcmb-ease ),
+		box-shadow var( --wpcmb-fast ) var( --wpcmb-ease );
+}
+
+.wpcmb-group-fields .wpcmb-input:hover,
+.wpcmb-block-editor .wpcmb-input:hover,
+.wpcmb-form .wpcmb-input:hover {
+	border-color: var( --wpcmb-faint );
+}
+
+/*
+ * Focus is a ring drawn with box-shadow rather than an outline, so it hugs the
+ * rounded corner. It replaces the shared outline for these controls only, and
+ * is the same two-value treatment: colour change plus a halo, so focus does
+ * not depend on hue alone.
+ */
+.wpcmb-group-fields .wpcmb-input:focus,
+.wpcmb-block-editor .wpcmb-input:focus,
+.wpcmb-form .wpcmb-input:focus {
+	border-color: var( --wpcmb-accent );
+	box-shadow: 0 0 0 3px var( --wpcmb-accent-tint );
+	outline: 2px solid transparent;
+	outline-offset: 0;
+}
+
+.wpcmb-group-fields .wpcmb-input[disabled],
+.wpcmb-block-editor .wpcmb-input[disabled],
+.wpcmb-form .wpcmb-input[disabled] {
+	background: var( --wpcmb-sunken );
+	color: var( --wpcmb-muted );
+	cursor: default;
+}
+
+.wpcmb-group-fields .wpcmb-input::placeholder,
+.wpcmb-block-editor .wpcmb-input::placeholder,
+.wpcmb-form .wpcmb-input::placeholder {
+	color: var( --wpcmb-faint );
+}
+
+/*
+ * A select keeps its own arrow on some platforms and not others. Replacing it
+ * with one of ours makes the control the same height and the same shape as a
+ * text input beside it. The chevron is inline SVG so nothing is fetched.
+ */
+.wpcmb-group-fields select.wpcmb-input,
+.wpcmb-block-editor select.wpcmb-input,
+.wpcmb-form select.wpcmb-input {
+	appearance: none;
+	background-image: url( 'data:image/svg+xml;charset=utf8,%3Csvg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 12 12"%3E%3Cpath fill="none" stroke="%23646970" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M2.5 4.5 6 8l3.5-3.5"/%3E%3C/svg%3E' );
+	background-position: right 10px center;
+	background-repeat: no-repeat;
+	background-size: 12px;
+	padding-inline-end: 30px;
+}
+
+/* The arrow follows the reading direction along with everything else. */
+.wpcmb-group-fields select.wpcmb-input:dir( rtl ),
+.wpcmb-block-editor select.wpcmb-input:dir( rtl ),
+.wpcmb-form select.wpcmb-input:dir( rtl ) {
+	background-position: left 10px center;
+}
+
+.wpcmb-group-fields select.wpcmb-input[multiple],
+.wpcmb-block-editor select.wpcmb-input[multiple],
+.wpcmb-form select.wpcmb-input[multiple] {
+	background-image: none;
+	padding-inline-end: 11px;
+}
+
+.wpcmb-group-fields textarea.wpcmb-input,
+.wpcmb-block-editor textarea.wpcmb-input,
+.wpcmb-form textarea.wpcmb-input {
+	min-height: 96px;
+	padding: 9px 11px;
+	resize: vertical;
+}
+
+/* The chevron is baked into an image, so dark mode needs its own copy. */
+@media ( prefers-color-scheme: dark ) {
+	.wpcmb-group-fields select.wpcmb-input,
+	.wpcmb-block-editor select.wpcmb-input,
+	.wpcmb-form select.wpcmb-input {
+		background-image: url( 'data:image/svg+xml;charset=utf8,%3Csvg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 12 12"%3E%3Cpath fill="none" stroke="%23a7aaad" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M2.5 4.5 6 8l3.5-3.5"/%3E%3C/svg%3E' );
+	}
+}
+
 input.wpcmb-input[type="range"],
 input.wpcmb-input[type="date"],
 input.wpcmb-input[type="time"],
@@ -201,7 +333,7 @@ input.wpcmb-input[type="datetime-local"] {
 	display: inline-flex;
 	max-width: 100%;
 	overflow: hidden;
-	transition: border-color 0.12s ease, box-shadow 0.12s ease;
+	transition: border-color var( --wpcmb-fast ) var( --wpcmb-ease ), box-shadow var( --wpcmb-fast ) var( --wpcmb-ease );
 	width: 220px;
 }
 
@@ -281,7 +413,7 @@ input.wpcmb-input[type="datetime-local"] {
 	cursor: pointer;
 	margin-inline-end: -1px;
 	padding: 6px 14px;
-	transition: background-color 0.12s ease;
+	transition: background-color var( --wpcmb-fast ) var( --wpcmb-ease );
 }
 
 .wpcmb-choices--button_group .wpcmb-choice:first-child {
@@ -335,7 +467,7 @@ input.wpcmb-input[type="datetime-local"] {
 	gap: 8px;
 	margin: 0;
 	padding: 5px 8px;
-	transition: border-color 0.12s ease;
+	transition: border-color var( --wpcmb-fast ) var( --wpcmb-ease );
 }
 
 .wpcmb-media__item:hover {
@@ -401,7 +533,7 @@ input.wpcmb-input[type="datetime-local"] {
 	flex: 0 0 auto;
 	height: 22px;
 	position: relative;
-	transition: background-color 0.15s ease;
+	transition: background-color var( --wpcmb-fast ) var( --wpcmb-ease );
 	width: 40px;
 }
 
@@ -414,7 +546,7 @@ input.wpcmb-input[type="datetime-local"] {
 	inset-block-start: 3px;
 	inset-inline-start: 3px;
 	position: absolute;
-	transition: inset-inline-start 0.15s ease;
+	transition: inset-inline-start var( --wpcmb-base ) var( --wpcmb-ease );
 	width: 16px;
 }
 
@@ -481,7 +613,7 @@ input.wpcmb-input[type="datetime-local"] {
 	line-height: 1;
 	margin: 0;
 	padding: 2px;
-	transition: color 0.1s ease;
+	transition: color var( --wpcmb-fast ) var( --wpcmb-ease );
 }
 
 .wpcmb-choices--rating .wpcmb-choice::before {
@@ -559,7 +691,13 @@ input.wpcmb-input[type="datetime-local"] {
 	background: var( --wpcmb-surface );
 	border: 1px solid var( --wpcmb-border );
 	border-radius: var( --wpcmb-radius );
+	box-shadow: var( --wpcmb-shadow );
 	flex: 1 0 100%;
+	transition: border-color var( --wpcmb-fast ) var( --wpcmb-ease );
+}
+
+.wpcmb-accordion:hover {
+	border-color: var( --wpcmb-border-strong );
 }
 
 .wpcmb-accordion__summary {
@@ -799,14 +937,24 @@ input.wpcmb-input[type="datetime-local"] {
 	background: var( --wpcmb-surface );
 	border: 1px solid var( --wpcmb-border );
 	border-radius: var( --wpcmb-radius );
-	transition: border-color 0.12s ease;
+	box-shadow: var( --wpcmb-shadow );
+	transition: border-color var( --wpcmb-fast ) var( --wpcmb-ease ),
+		box-shadow var( --wpcmb-fast ) var( --wpcmb-ease );
 }
 
 .wpcmb-repeater__row:hover {
 	border-color: var( --wpcmb-border-strong );
+	box-shadow: var( --wpcmb-shadow-lg );
 }
 
-/* The row being edited is the one worth pointing at. */
+/*
+ * The row being edited gets the accent border and a ring, matching the open
+ * field row in the builder — the same idea, so it reads the same way.
+ */
+.wpcmb-repeater__row:not( .is-collapsed ) {
+	box-shadow: 0 0 0 3px var( --wpcmb-accent-tint ), var( --wpcmb-shadow );
+}
+
 .wpcmb-repeater__row:not( .is-collapsed ) {
 	border-color: var( --wpcmb-accent );
 }
@@ -849,7 +997,7 @@ input.wpcmb-input[type="datetime-local"] {
 	cursor: pointer;
 	line-height: 1;
 	padding: 3px 5px;
-	transition: transform 0.15s ease;
+	transition: transform var( --wpcmb-base ) var( --wpcmb-ease );
 }
 
 .wpcmb-repeater__row.is-collapsed .wpcmb-repeater__toggle {
@@ -877,7 +1025,7 @@ input.wpcmb-input[type="datetime-local"] {
 }
 
 .wpcmb-repeater__buttons button:hover:not( [disabled] ) {
-	background: rgba( 128, 128, 128, 0.14 );
+	background: var( --wpcmb-wash );
 	color: var( --wpcmb-accent );
 }
 

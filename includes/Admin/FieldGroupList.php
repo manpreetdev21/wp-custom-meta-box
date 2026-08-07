@@ -29,8 +29,11 @@ final class FieldGroupList extends Module {
 
 	/**
 	 * Query arg carrying the id to duplicate.
+	 *
+	 * Public because GroupsPage links to the same handler: one duplicate
+	 * action, reachable from either list, rather than two that could drift.
 	 */
-	private const ACTION_DUPLICATE = 'wpcmb_duplicate';
+	public const ACTION_DUPLICATE = 'wpcmb_duplicate';
 
 	/**
 	 * Only load in the admin.
@@ -49,6 +52,7 @@ final class FieldGroupList extends Module {
 		add_action( "manage_{$type}_posts_custom_column", array( $this, 'render_column' ), 10, 2 );
 		add_filter( "manage_edit-{$type}_sortable_columns", array( $this, 'sortable_columns' ) );
 		add_filter( 'post_row_actions', array( $this, 'row_actions' ), 10, 2 );
+		add_filter( 'post_class', array( $this, 'row_class' ), 10, 3 );
 		add_filter( 'display_post_states', array( $this, 'post_states' ), 10, 2 );
 		add_filter( 'post_date_column_status', array( $this, 'hide_date_status' ), 10, 2 );
 		add_action( 'admin_action_' . self::ACTION_DUPLICATE, array( $this, 'handle_duplicate' ) );
@@ -108,20 +112,73 @@ final class FieldGroupList extends Module {
 
 		switch ( $column ) {
 			case 'wpcmb_key':
-				echo '<code>' . esc_html( $group->key ) . '</code>';
+				printf( '<code class="wpcmb-cell-key">%s</code>', esc_html( $group->key ) );
 				break;
 
 			case 'wpcmb_fields':
-				echo esc_html( (string) count( $group->fields ) );
+				$count = count( $group->fields );
+
+				// A zero is worth saying out loud rather than printing as "0":
+				// a group with no fields does nothing, and that is the single
+				// most useful thing this column can tell you at a glance.
+				printf(
+					'<span class="wpcmb-cell-count%s">%s</span>',
+					0 === $count ? ' is-empty' : '',
+					esc_html( 0 === $count ? __( 'None', 'wp-custom-meta-box' ) : (string) $count )
+				);
 				break;
 
 			case 'wpcmb_location':
 				$summary = Locations::describe( $group->location );
-				echo '' !== $summary
-					? esc_html( $summary )
-					: '<span class="wpcmb-muted">' . esc_html__( 'Not set', 'wp-custom-meta-box' ) . '</span>';
+
+				printf(
+					'<span class="wpcmb-cell-location%s">%s</span>',
+					'' === $summary ? ' is-unset' : '',
+					esc_html( '' !== $summary ? $summary : __( 'Not set', 'wp-custom-meta-box' ) )
+				);
 				break;
 		}
+	}
+
+	/**
+	 * Tag our own rows so the stylesheet has something of ours to hold onto.
+	 *
+	 * The list table is core markup end to end — `.wp-list-table`, `.tablenav`,
+	 * `.row-actions` — and painting any of that would change how a list table
+	 * looks on this screen versus every other one in WordPress. A class of our
+	 * own on the row is the supported way in, and it exists nowhere else.
+	 *
+	 * `post_class` runs on the front end too, so this checks it is our own
+	 * admin list screen before adding anything.
+	 *
+	 * @param array<int, string> $classes Existing classes.
+	 * @param array<int, string> $css     Extra classes passed to the filter.
+	 * @param int                $post_id Post id.
+	 *
+	 * @return array<int, string>
+	 */
+	public function row_class( $classes, $css = array(), $post_id = 0 ): array {
+		$classes = is_array( $classes ) ? $classes : array();
+
+		if ( ! is_admin() || FieldGroupPostType::POST_TYPE !== get_post_type( (int) $post_id ) ) {
+			return $classes;
+		}
+
+		// Not loaded during every admin request — an AJAX handler can reach
+		// post_class without wp-admin's screen API being available.
+		if ( ! function_exists( 'get_current_screen' ) ) {
+			return $classes;
+		}
+
+		$screen = get_current_screen();
+
+		if ( ! $screen instanceof \WP_Screen || 'edit' !== $screen->base ) {
+			return $classes;
+		}
+
+		$classes[] = 'wpcmb-row';
+
+		return $classes;
 	}
 
 	/**

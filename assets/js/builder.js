@@ -109,6 +109,54 @@
 	}
 
 	/**
+	 * The field name, as a chip that copies itself when clicked.
+	 *
+	 * This string is what gets retyped into get_field() all day, and it was
+	 * previously inert text sitting in the row. A button rather than a styled
+	 * code element, because it does something — which also gets it into the
+	 * tab order and gives it a name for screen readers for free.
+	 *
+	 * Copying can fail: the Clipboard API needs a secure context and a user
+	 * gesture, and an admin served over plain http has neither. The chip says
+	 * nothing in that case rather than claiming a copy that did not happen.
+	 *
+	 * @param {string} name Field name.
+	 * @return {HTMLElement} The chip.
+	 */
+	function copyChip( name ) {
+		var chip = el( 'button', {
+			type: 'button',
+			class: 'wpcmb-field-row__key',
+			title: i18n.copyKey,
+			'aria-label': i18n.copyKey,
+			text: name,
+		} );
+
+		chip.addEventListener( 'click', function () {
+			if ( ! navigator.clipboard || ! chip.textContent ) {
+				return;
+			}
+
+			navigator.clipboard.writeText( chip.textContent ).then( function () {
+				chip.classList.add( 'is-copied' );
+
+				// Announced rather than only shown: the chip's accessible name
+				// is the only thing a screen reader has to go on here.
+				chip.setAttribute( 'aria-label', i18n.copiedKey );
+
+				window.setTimeout( function () {
+					chip.classList.remove( 'is-copied' );
+					chip.setAttribute( 'aria-label', i18n.copyKey );
+				}, 1200 );
+			} ).catch( function () {
+				// Nothing to say: the value is still on screen to select.
+			} );
+		} );
+
+		return chip;
+	}
+
+	/**
 	 * A labelled control wrapped for the builder grid.
 	 *
 	 * @param {string}      label   Label text.
@@ -684,6 +732,11 @@
 				if ( ! nameEdited ) {
 					field.name = toName( field.label );
 					nameInput.value = field.name;
+
+					// Assigning .value fires no input event, so the chip that
+					// shows the name has to be told directly. Without this the
+					// row shows a blank name for a field that has one.
+					syncKey();
 					builder.sync();
 					builder.validate();
 				}
@@ -869,7 +922,7 @@
 				title,
 				required,
 				badge,
-				el( 'code', { class: 'wpcmb-field-row__key', text: field.name || '' } ),
+				copyChip( field.name || '' ),
 				toggle,
 				duplicate,
 				remove,
@@ -910,9 +963,22 @@
 			}
 		} );
 
-		nameInput.addEventListener( 'input', function () {
-			row.querySelector( '.wpcmb-field-row__key' ).textContent = field.name || '';
-		} );
+		/**
+		 * Put the current field name on the chip in the row header.
+		 *
+		 * Declared here rather than inline because two things change the name:
+		 * typing in the Name box, and typing a Label while the name is still
+		 * being derived from it.
+		 */
+		function syncKey() {
+			var chip = row.querySelector( '.wpcmb-field-row__key' );
+
+			if ( chip ) {
+				chip.textContent = field.name || '';
+			}
+		}
+
+		nameInput.addEventListener( 'input', syncKey );
 
 		return row;
 	};
@@ -980,7 +1046,7 @@
 		field.sub_fields = field.sub_fields || [];
 
 		var child = childBuilder( this, field.sub_fields );
-		var add = el( 'button', { type: 'button', class: 'button button-small', text: i18n.addSubField } );
+		var add = el( 'button', { type: 'button', class: 'wpcmb-btn wpcmb-btn--sm', text: i18n.addSubField } );
 
 		add.addEventListener( 'click', function () {
 			child.items.push( blankField() );
@@ -1046,7 +1112,7 @@
 				}
 			);
 
-			var remove = el( 'button', { type: 'button', class: 'button-link-delete', text: '×' } );
+			var remove = el( 'button', { type: 'button', class: 'wpcmb-iconbtn wpcmb-iconbtn--danger', text: '×' } );
 
 			remove.addEventListener( 'click', function () {
 				if ( window.confirm( i18n.confirmRemoveLayout ) ) {
@@ -1059,7 +1125,7 @@
 			layout.sub_fields = layout.sub_fields || [];
 
 			var child = childBuilder( builder, layout.sub_fields );
-			var addField = el( 'button', { type: 'button', class: 'button button-small', text: i18n.addSubField } );
+			var addField = el( 'button', { type: 'button', class: 'wpcmb-btn wpcmb-btn--sm', text: i18n.addSubField } );
 
 			addField.addEventListener( 'click', function () {
 				child.items.push( blankField() );
@@ -1110,7 +1176,7 @@
 			);
 		} );
 
-		var addLayout = el( 'button', { type: 'button', class: 'button button-small', text: i18n.addLayout } );
+		var addLayout = el( 'button', { type: 'button', class: 'wpcmb-btn wpcmb-btn--sm', text: i18n.addLayout } );
 
 		addLayout.addEventListener( 'click', function () {
 			field.layouts.push( {
@@ -1275,7 +1341,7 @@
 		var list = el( 'div' );
 
 		field.conditional.rules.forEach( function ( rule, ruleIndex ) {
-			var remove = el( 'button', { type: 'button', class: 'button-link-delete', text: '×' } );
+			var remove = el( 'button', { type: 'button', class: 'wpcmb-iconbtn wpcmb-rule__remove', text: '×' } );
 
 			remove.addEventListener( 'click', function () {
 				field.conditional.rules.splice( ruleIndex, 1 );
@@ -1315,7 +1381,7 @@
 			);
 		} );
 
-		var add = el( 'button', { type: 'button', class: 'button button-small', text: i18n.addCondition } );
+		var add = el( 'button', { type: 'button', class: 'wpcmb-btn wpcmb-btn--sm', text: i18n.addCondition } );
 
 		add.addEventListener( 'click', function () {
 			field.conditional.rules.push( { field: Object.keys( targets )[ 0 ], operator: '==', value: '' } );

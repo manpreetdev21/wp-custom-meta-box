@@ -606,3 +606,32 @@ function wp_rand( int $min = 0, int $max = 0 ): int {
 function _n( string $single, string $plural, int $number, string $domain = 'default' ): string {
 	return 1 === $number ? $single : $plural;
 }
+
+/**
+ * Admin context flag, settable by a test.
+ */
+function is_admin(): bool {
+	return ! empty( $GLOBALS['wpcmb_test_is_admin'] );
+}
+
+/**
+ * The current admin screen, settable by a test.
+ *
+ * @return object|null
+ */
+function get_current_screen() {
+	return $GLOBALS['wpcmb_test_screen'] ?? null;
+}
+
+/**
+ * Post type lookup against the test post store.
+ *
+ * @param int $id Post id.
+ *
+ * @return string|false
+ */
+function get_post_type( int $id = 0 ) {
+	$post = get_post( $id );
+
+	return $post instanceof WP_Post ? $post->post_type : false;
+}

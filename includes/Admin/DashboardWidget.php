@@ -61,7 +61,7 @@ final class DashboardWidget extends Module {
 
 		if ( array() === $groups ) {
 			printf(
-				'<p>%s</p><p><a class="button button-primary" href="%s">%s</a></p>',
+				'<p>%s</p><p><a class="wpcmb-btn wpcmb-btn--primary" href="%s">%s</a></p>',
 				esc_html__( 'No field groups yet.', 'wp-custom-meta-box' ),
 				esc_url( admin_url( 'post-new.php?post_type=' . FieldGroupPostType::POST_TYPE ) ),
 				esc_html__( 'Add Field Group', 'wp-custom-meta-box' )

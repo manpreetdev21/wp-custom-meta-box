@@ -134,7 +134,7 @@ final class Menu extends Module {
 						<?php esc_html_e( 'A field group is a set of fields plus the rules for where they appear. Create one to start adding fields to your content.', 'wp-custom-meta-box' ); ?>
 					</p>
 					<p>
-						<a class="button button-primary button-hero" href="<?php echo esc_url( admin_url( 'post-new.php?post_type=' . FieldGroupPostType::POST_TYPE ) ); ?>">
+						<a class="wpcmb-btn wpcmb-btn--primary wpcmb-btn--lg" href="<?php echo esc_url( admin_url( 'post-new.php?post_type=' . FieldGroupPostType::POST_TYPE ) ); ?>">
 							<?php esc_html_e( 'Create your first field group', 'wp-custom-meta-box' ); ?>
 						</a>
 					</p>
@@ -180,7 +180,7 @@ final class Menu extends Module {
 					<div class="wpcmb-card">
 						<h2><?php echo esc_html( $card['title'] ); ?></h2>
 						<p><?php echo esc_html( $card['text'] ); ?></p>
-						<a class="button button-primary" href="<?php echo esc_url( $card['url'] ); ?>">
+						<a class="wpcmb-btn wpcmb-btn--primary" href="<?php echo esc_url( $card['url'] ); ?>">
 							<?php echo esc_html( $card['label'] ); ?>
 						</a>
 					</div>

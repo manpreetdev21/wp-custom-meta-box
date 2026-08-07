@@ -1,65 +1,133 @@
 /**
  * Admin styles.
  *
- * Scoped to .wpcmb-admin throughout, so the plugin never restyles the rest of
- * wp-admin.
+ * Scoped to .wpcmb-admin throughout, and loaded only on this plugin's own
+ * screens, so nothing here can reach the rest of wp-admin or another plugin.
  *
- * The plugin has no accent colour of its own. It inherits
- * `--wp-admin-theme-color`, which WordPress sets from whichever admin colour
- * scheme the user picked, so the builder matches the rest of their admin
- * instead of imposing a brand on it. The hex fallbacks are only for the rare
- * screen where WordPress has not set the property.
+ * Design notes, because the two goals here pull against each other:
+ *
+ * The brief is a modern SaaS surface that still feels native to wp-admin. Those
+ * disagree — wp-admin is dense, square and grey; a Linear or Stripe surface is
+ * airy, rounded and quiet. The line taken is that we own everything inside our
+ * own screens and change nothing at the seams: the page canvas is wp-admin's
+ * own grey so there is no visible join, core chrome is left exactly as it is,
+ * and every control we draw is ours rather than a restyled core one.
+ *
+ * The plugin has no accent colour. It inherits `--wp-admin-theme-color`, which
+ * WordPress sets from the admin colour scheme the user chose. Painting our own
+ * brand blue over somebody's chosen scheme is the specific thing that makes a
+ * plugin feel bolted on. The hex fallbacks cover the rare screen where the
+ * property is unset.
+ *
+ * Colour is spent on almost nothing: state that matters (the row being edited,
+ * an error, the active tab) and nothing else. Hierarchy comes from weight,
+ * size and space, which is what keeps a screen this dense readable.
  *
  * @package WPCMB
  */
 
 .wpcmb-admin {
+	/* Surfaces, from the page backdrop up to a floating panel. */
+	--wpcmb-canvas: #f0f0f1;
 	--wpcmb-surface: #fff;
-	--wpcmb-sunken: #f6f7f7;
+	--wpcmb-sunken: #f7f8f9;
 	--wpcmb-raised: #fff;
-	--wpcmb-border: #dcdcde;
-	--wpcmb-border-strong: #c3c4c7;
-	--wpcmb-text: #1d2327;
+
+	/*
+	 * Lines are deliberately lighter than core's #dcdcde. At this density a
+	 * border on every row reads as a grid; softened, the cards separate by
+	 * surface and shadow instead, which is where the spaciousness comes from.
+	 */
+	--wpcmb-border: #e6e7e9;
+	--wpcmb-border-strong: #c9cbcf;
+
+	--wpcmb-text: #16191d;
 	--wpcmb-muted: #646970;
+	--wpcmb-faint: #8c8f94;
+
 	--wpcmb-accent: var( --wp-admin-theme-color, #2271b1 );
-	--wpcmb-accent-tint: rgba( 34, 113, 177, 0.08 );
+	--wpcmb-accent-tint: rgba( 34, 113, 177, 0.07 );
+	--wpcmb-accent-line: rgba( 34, 113, 177, 0.35 );
 	--wpcmb-danger: #b32d2e;
-	--wpcmb-radius: 4px;
+	--wpcmb-danger-tint: rgba( 179, 45, 46, 0.07 );
+
+	/* A hover wash that works on either theme without a second token. */
+	--wpcmb-wash: rgba( 16, 20, 26, 0.05 );
+
+	--wpcmb-radius: 10px;
+	--wpcmb-radius-sm: 8px;
+	--wpcmb-radius-chip: 6px;
+
+	/*
+	 * Two shadow levels only. Enterprise surfaces get muddy when every element
+	 * floats at its own height: resting cards sit at sm, things that overlap
+	 * the page sit at lg, and nothing sits in between.
+	 */
+	--wpcmb-shadow: 0 1px 2px rgba( 16, 20, 26, 0.04 ), 0 1px 3px rgba( 16, 20, 26, 0.06 );
+	--wpcmb-shadow-lg: 0 12px 32px -8px rgba( 16, 20, 26, 0.18 ), 0 2px 8px rgba( 16, 20, 26, 0.06 );
+
+	--wpcmb-space-1: 4px;
+	--wpcmb-space-2: 8px;
+	--wpcmb-space-3: 12px;
+	--wpcmb-space-4: 16px;
+	--wpcmb-space-5: 24px;
+	--wpcmb-space-6: 32px;
 	--wpcmb-gap: 12px;
-	--wpcmb-shadow: 0 1px 2px rgba( 0, 0, 0, 0.06 );
+
+	/*
+	 * One easing curve everywhere. It decelerates hard, which is what makes an
+	 * interface feel like it arrived rather than drifted.
+	 */
+	--wpcmb-ease: cubic-bezier( 0.2, 0, 0, 1 );
+	--wpcmb-fast: 150ms;
+	--wpcmb-base: 200ms;
 
 	/* Depth rails for nested field lists, one step per level. */
-	--wpcmb-rail: 3px;
+	--wpcmb-rail: 2px;
+
+	color: var( --wpcmb-text );
 }
 
 @media ( prefers-color-scheme: dark ) {
 	.wpcmb-admin:not( .wpcmb-light ) {
-		--wpcmb-surface: #1e1f21;
-		--wpcmb-sunken: #17181a;
-		--wpcmb-raised: #26282b;
-		--wpcmb-border: #3c3f44;
-		--wpcmb-border-strong: #4f5359;
-		--wpcmb-text: #e6e7e8;
+		--wpcmb-canvas: #101114;
+		--wpcmb-surface: #1c1e21;
+		--wpcmb-sunken: #17191c;
+		--wpcmb-raised: #24272b;
+		--wpcmb-border: #303338;
+		--wpcmb-border-strong: #4a4e55;
+		--wpcmb-text: #e8e9ea;
 		--wpcmb-muted: #a7aaad;
+		--wpcmb-faint: #82868b;
 		--wpcmb-accent: var( --wp-admin-theme-color, #72aee6 );
 		--wpcmb-accent-tint: rgba( 114, 174, 230, 0.12 );
+		--wpcmb-accent-line: rgba( 114, 174, 230, 0.4 );
 		--wpcmb-danger: #f86368;
-		--wpcmb-shadow: 0 1px 2px rgba( 0, 0, 0, 0.4 );
+		--wpcmb-danger-tint: rgba( 248, 99, 104, 0.12 );
+		--wpcmb-wash: rgba( 255, 255, 255, 0.07 );
+		--wpcmb-shadow: 0 1px 2px rgba( 0, 0, 0, 0.3 ), 0 1px 3px rgba( 0, 0, 0, 0.2 );
+		--wpcmb-shadow-lg: 0 12px 32px -8px rgba( 0, 0, 0, 0.6 ), 0 2px 8px rgba( 0, 0, 0, 0.3 );
 	}
 }
 
 .wpcmb-admin.wpcmb-dark {
-	--wpcmb-surface: #1e1f21;
-	--wpcmb-sunken: #17181a;
-	--wpcmb-raised: #26282b;
-	--wpcmb-border: #3c3f44;
-	--wpcmb-border-strong: #4f5359;
-	--wpcmb-text: #e6e7e8;
+	--wpcmb-canvas: #101114;
+	--wpcmb-surface: #1c1e21;
+	--wpcmb-sunken: #17191c;
+	--wpcmb-raised: #24272b;
+	--wpcmb-border: #303338;
+	--wpcmb-border-strong: #4a4e55;
+	--wpcmb-text: #e8e9ea;
 	--wpcmb-muted: #a7aaad;
+	--wpcmb-faint: #82868b;
 	--wpcmb-accent: var( --wp-admin-theme-color, #72aee6 );
 	--wpcmb-accent-tint: rgba( 114, 174, 230, 0.12 );
+	--wpcmb-accent-line: rgba( 114, 174, 230, 0.4 );
 	--wpcmb-danger: #f86368;
-	--wpcmb-shadow: 0 1px 2px rgba( 0, 0, 0, 0.4 );
+	--wpcmb-danger-tint: rgba( 248, 99, 104, 0.12 );
+	--wpcmb-wash: rgba( 255, 255, 255, 0.07 );
+	--wpcmb-shadow: 0 1px 2px rgba( 0, 0, 0, 0.3 ), 0 1px 3px rgba( 0, 0, 0, 0.2 );
+	--wpcmb-shadow-lg: 0 12px 32px -8px rgba( 0, 0, 0, 0.6 ), 0 2px 8px rgba( 0, 0, 0, 0.3 );
 }
 
 .wpcmb-admin .wpcmb-wrap,
@@ -67,63 +135,300 @@
 	color: var( --wpcmb-text );
 }
 
-/* Shared primitives. */
+/*
+ * One focus ring for the whole surface, drawn outside the element so it never
+ * shifts layout. Two pixels at the accent colour clears 3:1 against every
+ * surface token above.
+ */
+.wpcmb-admin :focus-visible {
+	border-radius: var( --wpcmb-radius-chip );
+	outline: 2px solid var( --wpcmb-accent );
+	outline-offset: 2px;
+}
+
+/* -------------------------------------------------------------------------
+ * Primitives.
+ * ---------------------------------------------------------------------- */
 
 .wpcmb-muted {
 	color: var( --wpcmb-muted );
 }
 
 .wpcmb-label {
+	color: var( --wpcmb-muted );
 	display: block;
 	font-size: 12px;
-	font-weight: 600;
-	margin-bottom: 4px;
+	font-weight: 500;
+	margin-bottom: 5px;
 }
 
 /*
- * Section headings inside the builder. Small, tracked and quiet, so the
- * hierarchy is legible without spending colour on it — colour is reserved
- * for state that matters, like an error or the active tab.
+ * Section headings. Small, tracked and quiet: they mark territory without
+ * competing with the content under them.
  */
 .wpcmb-admin .wpcmb-eyebrow,
 .wpcmb-admin .wpcmb-subsection > summary {
-	color: var( --wpcmb-muted );
+	color: var( --wpcmb-faint );
 	font-size: 11px;
 	font-weight: 600;
-	letter-spacing: 0.04em;
+	letter-spacing: 0.05em;
 	text-transform: uppercase;
 }
 
-/* A count beside a section heading, so a collapsed section still tells you
-   whether there is anything in it. */
+/* A count beside a heading, so a collapsed section says whether it holds
+   anything. Tabular figures stop it twitching as the number changes. */
 .wpcmb-count {
-	background: var( --wpcmb-sunken );
-	border: 1px solid var( --wpcmb-border );
-	border-radius: 9px;
+	background: var( --wpcmb-wash );
+	border-radius: 999px;
 	color: var( --wpcmb-muted );
 	display: inline-block;
-	font-size: 10px;
+	font-size: 11px;
+	font-variant-numeric: tabular-nums;
 	font-weight: 600;
 	letter-spacing: 0;
-	line-height: 1.6;
-	margin-inline-start: 6px;
-	min-width: 18px;
-	padding: 0 5px;
+	line-height: 18px;
+	margin-inline-start: 8px;
+	min-width: 20px;
+	padding: 0 6px;
 	text-align: center;
 }
 
-.wpcmb-admin :focus-visible {
-	outline: 2px solid var( --wpcmb-accent );
-	outline-offset: 1px;
+/* -------------------------------------------------------------------------
+ * Buttons.
+ *
+ * Ours, not core's. Core's `.button` is off limits — it is on every admin
+ * screen in WordPress — so the only way to have a button that matches this
+ * surface is to draw one. Used wherever the plugin renders its own control;
+ * core's own buttons, such as the one submit_button() prints, are left alone.
+ * ---------------------------------------------------------------------- */
+
+.wpcmb-btn {
+	align-items: center;
+	background: var( --wpcmb-surface );
+	border: 1px solid var( --wpcmb-border-strong );
+	border-radius: var( --wpcmb-radius-sm );
+	box-shadow: 0 1px 2px rgba( 16, 20, 26, 0.04 );
+	color: var( --wpcmb-text );
+	cursor: pointer;
+	display: inline-flex;
+	font-size: 13px;
+	font-weight: 500;
+	gap: 6px;
+	justify-content: center;
+	line-height: 1.4;
+	padding: 7px 14px;
+	text-decoration: none;
+	transition: background-color var( --wpcmb-fast ) var( --wpcmb-ease ),
+		border-color var( --wpcmb-fast ) var( --wpcmb-ease ),
+		box-shadow var( --wpcmb-fast ) var( --wpcmb-ease );
+	white-space: nowrap;
 }
 
-/* Overview and tools. */
+.wpcmb-btn:hover {
+	background: var( --wpcmb-sunken );
+	border-color: var( --wpcmb-faint );
+	color: var( --wpcmb-text );
+}
+
+/* Pressing removes the lift, which is most of what makes a button feel real. */
+.wpcmb-btn:active {
+	box-shadow: none;
+	transform: translateY( 1px );
+}
+
+.wpcmb-btn[disabled] {
+	cursor: default;
+	opacity: 0.5;
+}
+
+.wpcmb-btn--primary {
+	background: var( --wpcmb-accent );
+	border-color: var( --wpcmb-accent );
+	box-shadow: 0 1px 2px rgba( 16, 20, 26, 0.12 );
+	color: #fff;
+}
+
+.wpcmb-btn--primary:hover {
+	background: var( --wpcmb-accent );
+	border-color: var( --wpcmb-accent );
+	box-shadow: 0 2px 8px -1px var( --wpcmb-accent-line );
+	color: #fff;
+
+	/* Darkening a colour we do not know the value of, without a second token. */
+	filter: brightness( 0.93 );
+}
+
+/* A quiet button for secondary actions inside a dense row. */
+.wpcmb-btn--ghost {
+	background: none;
+	border-color: transparent;
+	box-shadow: none;
+	color: var( --wpcmb-muted );
+}
+
+.wpcmb-btn--ghost:hover {
+	background: var( --wpcmb-wash );
+	border-color: transparent;
+	color: var( --wpcmb-text );
+}
+
+.wpcmb-btn--sm {
+	font-size: 12px;
+	padding: 5px 10px;
+}
+
+.wpcmb-btn--lg {
+	font-size: 14px;
+	padding: 10px 20px;
+}
+
+/* An add control reads as an invitation rather than a button. */
+.wpcmb-btn--add {
+	background: none;
+	border-style: dashed;
+	border-color: var( --wpcmb-border-strong );
+	box-shadow: none;
+	color: var( --wpcmb-muted );
+	width: 100%;
+}
+
+.wpcmb-btn--add:hover {
+	background: var( --wpcmb-accent-tint );
+	border-color: var( --wpcmb-accent );
+	border-style: solid;
+	color: var( --wpcmb-accent );
+}
+
+/* An icon-only control in a row header or toolbar. */
+.wpcmb-iconbtn {
+	align-items: center;
+	background: none;
+	border: 0;
+	border-radius: var( --wpcmb-radius-chip );
+	color: var( --wpcmb-muted );
+	cursor: pointer;
+	display: inline-flex;
+	justify-content: center;
+	line-height: 1;
+	padding: 5px;
+	transition: background-color var( --wpcmb-fast ) var( --wpcmb-ease ),
+		color var( --wpcmb-fast ) var( --wpcmb-ease );
+}
+
+.wpcmb-iconbtn:hover {
+	background: var( --wpcmb-wash );
+	color: var( --wpcmb-text );
+}
+
+.wpcmb-iconbtn[disabled] {
+	cursor: default;
+	opacity: 0.35;
+}
+
+.wpcmb-iconbtn--danger:hover {
+	background: var( --wpcmb-danger-tint );
+	color: var( --wpcmb-danger );
+}
+
+/* -------------------------------------------------------------------------
+ * Controls.
+ *
+ * `.wpcmb-field-row__control` is on our own inputs, selects and textareas and
+ * nowhere else. Written with the `.wpcmb-admin` ancestor because core styles
+ * inputs as `input[type=text]`, which outranks a single class — a rule that
+ * only wins on load order stops working the day something enqueues after us.
+ * ---------------------------------------------------------------------- */
+
+.wpcmb-admin .wpcmb-field-row__control {
+	background: var( --wpcmb-surface );
+	border: 1px solid var( --wpcmb-border-strong );
+	border-radius: var( --wpcmb-radius-sm );
+	box-shadow: none;
+	color: var( --wpcmb-text );
+	font-size: 13px;
+	line-height: 1.5;
+	min-height: 34px;
+	padding: 5px 10px;
+	transition: border-color var( --wpcmb-fast ) var( --wpcmb-ease ),
+		box-shadow var( --wpcmb-fast ) var( --wpcmb-ease );
+}
+
+.wpcmb-admin .wpcmb-field-row__control:hover {
+	border-color: var( --wpcmb-faint );
+}
+
+/*
+ * Focus is a ring drawn with box-shadow so it follows the rounded corner. It
+ * replaces the shared outline for these controls only, and still changes two
+ * things at once rather than relying on hue alone.
+ */
+.wpcmb-admin .wpcmb-field-row__control:focus {
+	border-color: var( --wpcmb-accent );
+	box-shadow: 0 0 0 3px var( --wpcmb-accent-tint );
+	outline: 2px solid transparent;
+	outline-offset: 0;
+}
+
+.wpcmb-admin .wpcmb-field-row__control[disabled] {
+	background: var( --wpcmb-sunken );
+	color: var( --wpcmb-muted );
+	cursor: default;
+}
+
+.wpcmb-admin .wpcmb-field-row__control::placeholder {
+	color: var( --wpcmb-faint );
+}
+
+/*
+ * Our own chevron, so a select is exactly the height and shape of the text
+ * input beside it. Inline SVG, so nothing is fetched.
+ */
+.wpcmb-admin select.wpcmb-field-row__control {
+	appearance: none;
+	background-image: url( 'data:image/svg+xml;charset=utf8,%3Csvg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 12 12"%3E%3Cpath fill="none" stroke="%23646970" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M2.5 4.5 6 8l3.5-3.5"/%3E%3C/svg%3E' );
+	background-position: right 10px center;
+	background-repeat: no-repeat;
+	background-size: 12px;
+	padding-inline-end: 30px;
+}
+
+/* The arrow follows the reading direction along with everything else. */
+.wpcmb-admin select.wpcmb-field-row__control:dir( rtl ) {
+	background-position: left 10px center;
+}
+
+/* The chevron is baked into an image, so dark mode needs its own copy. */
+@media ( prefers-color-scheme: dark ) {
+	.wpcmb-admin:not( .wpcmb-light ) select.wpcmb-field-row__control {
+		background-image: url( 'data:image/svg+xml;charset=utf8,%3Csvg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 12 12"%3E%3Cpath fill="none" stroke="%23a7aaad" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M2.5 4.5 6 8l3.5-3.5"/%3E%3C/svg%3E' );
+	}
+}
+
+.wpcmb-admin.wpcmb-dark select.wpcmb-field-row__control {
+	background-image: url( 'data:image/svg+xml;charset=utf8,%3Csvg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 12 12"%3E%3Cpath fill="none" stroke="%23a7aaad" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M2.5 4.5 6 8l3.5-3.5"/%3E%3C/svg%3E' );
+}
+
+.wpcmb-admin textarea.wpcmb-field-row__control {
+	min-height: 84px;
+	padding: 8px 10px;
+	resize: vertical;
+}
+
+/* A checkbox keeps its native size; only the row it sits in is ours. */
+.wpcmb-admin .wpcmb-field-row__checkbox {
+	min-height: 0;
+	padding: 0;
+}
+
+/* -------------------------------------------------------------------------
+ * Overview, cards and stats.
+ * ---------------------------------------------------------------------- */
 
 .wpcmb-stats {
-	display: flex;
-	flex-wrap: wrap;
-	gap: var( --wpcmb-gap );
-	margin: 20px 0;
+	display: grid;
+	gap: var( --wpcmb-space-3 );
+	grid-template-columns: repeat( auto-fit, minmax( 170px, 1fr ) );
+	margin: var( --wpcmb-space-5 ) 0;
 }
 
 .wpcmb-stat {
@@ -131,30 +436,37 @@
 	border: 1px solid var( --wpcmb-border );
 	border-radius: var( --wpcmb-radius );
 	box-shadow: var( --wpcmb-shadow );
-	flex: 1 1 140px;
-	padding: 16px 18px;
+	padding: var( --wpcmb-space-4 ) var( --wpcmb-space-5 );
 }
 
+/*
+ * The number is the content; the label is the caption. Lining figures at a
+ * light weight read as data rather than as a headline.
+ */
 .wpcmb-stat__value {
 	display: block;
-	font-size: 30px;
+	font-size: 34px;
 	font-variant-numeric: tabular-nums;
-	font-weight: 500;
+	font-weight: 400;
+	letter-spacing: -0.02em;
 	line-height: 1.1;
 }
 
 .wpcmb-stat__label {
-	color: var( --wpcmb-muted );
-	font-size: 12px;
-	letter-spacing: 0.03em;
+	color: var( --wpcmb-faint );
+	display: block;
+	font-size: 11px;
+	font-weight: 600;
+	letter-spacing: 0.05em;
+	margin-top: var( --wpcmb-space-1 );
 	text-transform: uppercase;
 }
 
 .wpcmb-cards {
 	display: grid;
-	gap: var( --wpcmb-gap );
+	gap: var( --wpcmb-space-3 );
 	grid-template-columns: repeat( auto-fit, minmax( 280px, 1fr ) );
-	margin: 20px 0;
+	margin: var( --wpcmb-space-5 ) 0;
 }
 
 .wpcmb-card {
@@ -164,23 +476,34 @@
 	box-shadow: var( --wpcmb-shadow );
 	display: flex;
 	flex-direction: column;
-	padding: 18px 20px;
+	padding: var( --wpcmb-space-5 );
+	transition: border-color var( --wpcmb-base ) var( --wpcmb-ease ),
+		box-shadow var( --wpcmb-base ) var( --wpcmb-ease );
+}
+
+.wpcmb-card:hover {
+	border-color: var( --wpcmb-border-strong );
+	box-shadow: var( --wpcmb-shadow-lg );
 }
 
 .wpcmb-card h2 {
 	font-size: 15px;
-	margin: 0 0 6px;
+	font-weight: 600;
+	line-height: 1.4;
+	margin: 0 0 var( --wpcmb-space-2 );
 }
 
 .wpcmb-card p {
 	color: var( --wpcmb-muted );
 	flex: 1 1 auto;
-	margin: 0 0 14px;
+	line-height: 1.6;
+	margin: 0 0 var( --wpcmb-space-4 );
 }
 
 .wpcmb-php-export {
-	font-family: Consolas, Monaco, monospace;
+	font-family: ui-monospace, "SFMono-Regular", "Cascadia Mono", Consolas, monospace;
 	font-size: 12px;
+	line-height: 1.6;
 }
 
 .wpcmb-dashboard-list {
@@ -190,34 +513,387 @@
 .wpcmb-dashboard-list li {
 	border-bottom: 1px solid var( --wpcmb-border );
 	display: flex;
-	gap: 8px;
+	gap: var( --wpcmb-space-2 );
 	justify-content: space-between;
 	margin: 0;
-	padding: 8px 0;
+	padding: var( --wpcmb-space-2 ) 0;
+}
+
+.wpcmb-dashboard-list li:last-child {
+	border-bottom: 0;
 }
 
 .wpcmb-fieldset {
 	border: 1px solid var( --wpcmb-border );
-	border-radius: var( --wpcmb-radius );
-	margin: 12px 0;
-	padding: 10px 12px;
+	border-radius: var( --wpcmb-radius-sm );
+	margin: var( --wpcmb-space-3 ) 0;
+	padding: var( --wpcmb-space-3 ) var( --wpcmb-space-4 );
 }
 
 .wpcmb-fieldset legend {
-	color: var( --wpcmb-muted );
+	color: var( --wpcmb-faint );
 	font-size: 11px;
 	font-weight: 600;
-	letter-spacing: 0.04em;
-	padding: 0 4px;
+	letter-spacing: 0.05em;
+	padding: 0 var( --wpcmb-space-1 );
 	text-transform: uppercase;
 }
 
 .wpcmb-checkbox {
 	display: block;
-	margin-bottom: 4px;
+	margin-bottom: var( --wpcmb-space-1 );
 }
 
-/* Builder shell. */
+/* -------------------------------------------------------------------------
+ * The plugin's own field group screen.
+ *
+ * Every element here is rendered by GroupsPage, so all of it can be styled
+ * without going near anything core owns. This is the screen the core list
+ * table could not become.
+ * ---------------------------------------------------------------------- */
+
+.wpcmb-page-header {
+	align-items: flex-end;
+	display: flex;
+	flex-wrap: wrap;
+	gap: var( --wpcmb-space-4 );
+	justify-content: space-between;
+	padding: var( --wpcmb-space-2 ) 0 var( --wpcmb-space-4 );
+}
+
+.wpcmb-page-header__title {
+	font-size: 23px;
+	font-weight: 600;
+	letter-spacing: -0.02em;
+	line-height: 1.2;
+	margin: 0;
+	padding: 0;
+}
+
+.wpcmb-page-header__sub {
+	color: var( --wpcmb-muted );
+	margin: var( --wpcmb-space-1 ) 0 0;
+	max-width: 60ch;
+}
+
+.wpcmb-page-header__actions {
+	display: flex;
+	gap: var( --wpcmb-space-2 );
+}
+
+/*
+ * Counts as a sentence rather than as four cards. On the overview screen the
+ * numbers are the content and earn stat cards; here they are a caption above
+ * a list that already shows everything, so they stay small.
+ */
+.wpcmb-page-stats {
+	color: var( --wpcmb-muted );
+	display: flex;
+	flex-wrap: wrap;
+	gap: var( --wpcmb-space-4 );
+	margin-bottom: var( --wpcmb-space-4 );
+}
+
+.wpcmb-page-stat strong {
+	color: var( --wpcmb-text );
+	font-variant-numeric: tabular-nums;
+	font-weight: 600;
+}
+
+.wpcmb-listbar {
+	align-items: center;
+	display: flex;
+	flex-wrap: wrap;
+	gap: var( --wpcmb-space-3 );
+	justify-content: space-between;
+	margin-bottom: var( --wpcmb-space-3 );
+}
+
+/* Status filter, as a segmented control on a sunken track. */
+.wpcmb-listbar__filters {
+	background: var( --wpcmb-sunken );
+	border: 1px solid var( --wpcmb-border );
+	border-radius: var( --wpcmb-radius-sm );
+	display: flex;
+	gap: 2px;
+	padding: 3px;
+}
+
+.wpcmb-listbar__filter {
+	align-items: center;
+	border-radius: var( --wpcmb-radius-chip );
+	color: var( --wpcmb-muted );
+	display: inline-flex;
+	font-size: 12px;
+	font-weight: 500;
+	padding: 5px 12px;
+	text-decoration: none;
+	transition: background-color var( --wpcmb-fast ) var( --wpcmb-ease ),
+		color var( --wpcmb-fast ) var( --wpcmb-ease );
+}
+
+.wpcmb-listbar__filter:hover {
+	color: var( --wpcmb-text );
+}
+
+.wpcmb-listbar__filter.is-active {
+	background: var( --wpcmb-surface );
+	box-shadow: 0 1px 2px rgba( 16, 20, 26, 0.06 );
+	color: var( --wpcmb-text );
+	font-weight: 600;
+}
+
+.wpcmb-listbar__search {
+	align-items: center;
+	display: flex;
+	gap: var( --wpcmb-space-2 );
+}
+
+.wpcmb-listbar__search .wpcmb-field-row__control {
+	min-width: 220px;
+}
+
+.wpcmb-listbar__result {
+	color: var( --wpcmb-faint );
+	font-size: 12px;
+	margin: 0 0 var( --wpcmb-space-3 );
+}
+
+/* The list. */
+
+.wpcmb-table {
+	background: var( --wpcmb-surface );
+	border: 1px solid var( --wpcmb-border );
+	border-collapse: separate;
+	border-radius: var( --wpcmb-radius );
+	border-spacing: 0;
+	box-shadow: var( --wpcmb-shadow );
+	overflow: hidden;
+	width: 100%;
+}
+
+.wpcmb-table th {
+	background: var( --wpcmb-sunken );
+	border-bottom: 1px solid var( --wpcmb-border );
+	color: var( --wpcmb-faint );
+	font-size: 11px;
+	font-weight: 600;
+	letter-spacing: 0.05em;
+	padding: var( --wpcmb-space-3 ) var( --wpcmb-space-4 );
+	text-align: start;
+	text-transform: uppercase;
+}
+
+.wpcmb-table__cell {
+	border-bottom: 1px solid var( --wpcmb-border );
+	padding: var( --wpcmb-space-3 ) var( --wpcmb-space-4 );
+	vertical-align: middle;
+}
+
+/* The card has a border already; a rule under the final row doubles it. */
+.wpcmb-table__row:last-child .wpcmb-table__cell {
+	border-bottom: 0;
+}
+
+.wpcmb-table__row {
+	transition: background-color var( --wpcmb-fast ) var( --wpcmb-ease );
+}
+
+.wpcmb-table__row:hover {
+	background: var( --wpcmb-accent-tint );
+}
+
+.wpcmb-table__title {
+	display: block;
+	font-size: 14px;
+	font-weight: 600;
+	margin-bottom: var( --wpcmb-space-1 );
+	text-decoration: none;
+}
+
+.wpcmb-table__col--fields {
+	width: 90px;
+}
+
+.wpcmb-table__col--status {
+	width: 110px;
+}
+
+.wpcmb-table__col--actions {
+	width: 160px;
+}
+
+/*
+ * Row actions appear on hover, as they do in the builder. They are always
+ * present for keyboard users, since focus-within reveals them.
+ */
+.wpcmb-table__cell--actions {
+	opacity: 0;
+	text-align: end;
+	transition: opacity var( --wpcmb-fast ) var( --wpcmb-ease );
+	white-space: nowrap;
+}
+
+.wpcmb-table__row:hover .wpcmb-table__cell--actions,
+.wpcmb-table__row:focus-within .wpcmb-table__cell--actions {
+	opacity: 1;
+}
+
+.wpcmb-status {
+	border-radius: 999px;
+	display: inline-block;
+	font-size: 11px;
+	font-weight: 600;
+	line-height: 20px;
+	padding: 0 10px;
+}
+
+/*
+ * Active is the ordinary state, so it is quiet. Inactive is the one worth
+ * noticing — a group that exists but collects nothing — and it carries a
+ * dashed outline as well as a colour, so it does not rely on hue.
+ */
+.wpcmb-status--active {
+	background: var( --wpcmb-accent-tint );
+	color: var( --wpcmb-accent );
+}
+
+.wpcmb-status--inactive {
+	border: 1px dashed var( --wpcmb-border-strong );
+	color: var( --wpcmb-faint );
+	line-height: 18px;
+}
+
+@media screen and ( max-width: 782px ) {
+	.wpcmb-page-header {
+		align-items: stretch;
+	}
+
+	.wpcmb-listbar {
+		align-items: stretch;
+		flex-direction: column;
+	}
+
+	.wpcmb-listbar__search .wpcmb-field-row__control {
+		min-width: 0;
+		width: 100%;
+	}
+
+	/* Hover cannot reveal anything on a touch screen. */
+	.wpcmb-table__cell--actions {
+		opacity: 1;
+	}
+
+	/* Location is the first thing to go when the table runs out of room. */
+	.wpcmb-table__col--location,
+	.wpcmb-table__cell:nth-child( 3 ) {
+		display: none;
+	}
+}
+
+@media ( hover: none ) {
+	.wpcmb-table__cell--actions {
+		opacity: 1;
+	}
+}
+
+/* -------------------------------------------------------------------------
+ * The core list table at edit.php.
+ *
+ * The table here is core's, top to bottom: .wp-list-table, .tablenav,
+ * .row-actions, the lot. None of it is touched. Painting it would mean a list
+ * table that looks different on this screen than on every other screen in
+ * WordPress, which is the same mistake as restyling a core button.
+ *
+ * What is styled instead is only ever ours: a class added to each row through
+ * the `post_class` filter, the cell contents this plugin prints, and the
+ * column classes WordPress derives from the column slugs we registered — which
+ * exist on no other screen, because no other screen has those columns.
+ * ---------------------------------------------------------------------- */
+
+/*
+ * Column widths. Without these the browser gives the long Location summary and
+ * the two-character Fields count similar room, and the table reads as a wall.
+ */
+.wpcmb-admin .column-wpcmb_key {
+	width: 20%;
+}
+
+.wpcmb-admin .column-wpcmb_fields {
+	width: 90px;
+}
+
+.wpcmb-admin .column-wpcmb_location {
+	width: 30%;
+}
+
+.wpcmb-admin .wpcmb-row:hover {
+	background: var( --wpcmb-accent-tint );
+}
+
+/*
+ * The group key, in the same monospace chip the builder uses for a field name.
+ * Same thing, same treatment, so it is recognisable in both places.
+ */
+.wpcmb-cell-key {
+	background: var( --wpcmb-wash );
+	border-radius: var( --wpcmb-radius-chip );
+	color: var( --wpcmb-muted );
+	display: inline-block;
+	font-family: ui-monospace, "SFMono-Regular", "Cascadia Mono", Consolas, monospace;
+	font-size: 11px;
+	max-width: 100%;
+	overflow: hidden;
+	padding: 3px 7px;
+	text-overflow: ellipsis;
+	vertical-align: middle;
+	white-space: nowrap;
+}
+
+.wpcmb-cell-count {
+	background: var( --wpcmb-wash );
+	border-radius: 999px;
+	color: var( --wpcmb-text );
+	display: inline-block;
+	font-size: 12px;
+	font-variant-numeric: tabular-nums;
+	font-weight: 600;
+	line-height: 20px;
+	min-width: 24px;
+	padding: 0 8px;
+	text-align: center;
+}
+
+/*
+ * A group with no fields collects nothing. That is worth showing as a state
+ * rather than as the number zero, which reads as data.
+ */
+.wpcmb-cell-count.is-empty {
+	background: none;
+	border: 1px dashed var( --wpcmb-border-strong );
+	color: var( --wpcmb-faint );
+	font-weight: 400;
+	line-height: 18px;
+}
+
+.wpcmb-cell-location {
+	color: var( --wpcmb-text );
+	display: block;
+	line-height: 1.5;
+}
+
+/*
+ * A group with no location rule never appears anywhere, which is the other
+ * silent way a group can do nothing.
+ */
+.wpcmb-cell-location.is-unset {
+	color: var( --wpcmb-faint );
+	font-style: italic;
+}
+
+/* -------------------------------------------------------------------------
+ * Builder shell.
+ * ---------------------------------------------------------------------- */
 
 .wpcmb-builder__fallback {
 	color: var( --wpcmb-muted );
@@ -225,14 +901,14 @@
 
 .wpcmb-builder__notice {
 	align-items: center;
-	background: var( --wpcmb-sunken );
+	background: var( --wpcmb-danger-tint );
 	border-inline-start: 3px solid var( --wpcmb-danger );
-	border-radius: 0 var( --wpcmb-radius ) var( --wpcmb-radius ) 0;
+	border-radius: 0 var( --wpcmb-radius-sm ) var( --wpcmb-radius-sm ) 0;
 	color: var( --wpcmb-danger );
 	display: flex;
-	gap: 8px;
-	margin: 12px 0 0;
-	padding: 8px 12px;
+	gap: var( --wpcmb-space-2 );
+	margin: var( --wpcmb-space-3 ) 0 0;
+	padding: var( --wpcmb-space-2 ) var( --wpcmb-space-3 );
 }
 
 /*
@@ -240,34 +916,41 @@
  * is a heading, a button, and nothing that says what the button is for.
  */
 .wpcmb-empty {
+	background: var( --wpcmb-sunken );
 	border: 1px dashed var( --wpcmb-border-strong );
 	border-radius: var( --wpcmb-radius );
 	color: var( --wpcmb-muted );
-	padding: 22px 16px;
+	padding: var( --wpcmb-space-6 ) var( --wpcmb-space-4 );
 	text-align: center;
 }
 
 .wpcmb-empty__title {
 	color: var( --wpcmb-text );
 	display: block;
+	font-size: 14px;
 	font-weight: 600;
-	margin-bottom: 2px;
+	margin-bottom: var( --wpcmb-space-1 );
 }
 
 /* The same placeholder, given room when it is the whole screen. */
 .wpcmb-empty--page {
 	background: var( --wpcmb-surface );
-	margin: 20px 0;
-	padding: 44px 24px;
+	border-style: solid;
+	border-color: var( --wpcmb-border );
+	box-shadow: var( --wpcmb-shadow );
+	margin: var( --wpcmb-space-5 ) 0;
+	padding: 64px var( --wpcmb-space-5 );
 }
 
 .wpcmb-empty--page .wpcmb-empty__title {
-	font-size: 18px;
-	margin-bottom: 8px;
+	font-size: 20px;
+	letter-spacing: -0.01em;
+	margin-bottom: var( --wpcmb-space-2 );
 }
 
 .wpcmb-empty--page p {
-	margin: 0 auto 16px;
+	line-height: 1.6;
+	margin: 0 auto var( --wpcmb-space-5 );
 	max-width: 46ch;
 }
 
@@ -275,17 +958,24 @@
 .wpcmb-hint {
 	background: var( --wpcmb-accent-tint );
 	border-inline-start: 3px solid var( --wpcmb-accent );
-	border-radius: 0 var( --wpcmb-radius ) var( --wpcmb-radius ) 0;
-	margin: 16px 0;
-	padding: 10px 14px;
+	border-radius: 0 var( --wpcmb-radius-sm ) var( --wpcmb-radius-sm ) 0;
+	margin: var( --wpcmb-space-4 ) 0;
+	padding: var( --wpcmb-space-3 ) var( --wpcmb-space-4 );
 }
 
-/* Field rows. */
+/* -------------------------------------------------------------------------
+ * Field rows.
+ *
+ * The row is the atom of this screen and the thing an editor spends the day
+ * looking at, so it gets the most attention: a calm resting state, controls
+ * that appear when the pointer arrives rather than shouting all the time, and
+ * an unmistakable open state.
+ * ---------------------------------------------------------------------- */
 
 .wpcmb-builder__list {
 	display: flex;
 	flex-direction: column;
-	gap: 6px;
+	gap: var( --wpcmb-space-2 );
 }
 
 .wpcmb-field-row {
@@ -293,16 +983,22 @@
 	border: 1px solid var( --wpcmb-border );
 	border-radius: var( --wpcmb-radius );
 	box-shadow: var( --wpcmb-shadow );
-	transition: border-color 0.12s ease;
+	transition: border-color var( --wpcmb-fast ) var( --wpcmb-ease ),
+		box-shadow var( --wpcmb-fast ) var( --wpcmb-ease );
 }
 
 .wpcmb-field-row:hover {
 	border-color: var( --wpcmb-border-strong );
+	box-shadow: var( --wpcmb-shadow-lg );
 }
 
-/* The open row is the one being worked on, so it gets the accent. */
+/*
+ * The open row is the one being worked on. It gets the accent border and a
+ * ring, so it stays findable after scrolling past a dozen collapsed rows.
+ */
 .wpcmb-field-row:not( .is-collapsed ) {
 	border-color: var( --wpcmb-accent );
+	box-shadow: 0 0 0 3px var( --wpcmb-accent-tint ), var( --wpcmb-shadow );
 }
 
 .wpcmb-field-row__placeholder {
@@ -313,24 +1009,36 @@
 
 .wpcmb-field-row__header {
 	align-items: center;
-	background: var( --wpcmb-sunken );
+	background: var( --wpcmb-surface );
 	border-radius: calc( var( --wpcmb-radius ) - 1px );
 	display: flex;
 	flex-wrap: wrap;
-	gap: 8px;
-	padding: 8px 10px;
+	gap: var( --wpcmb-space-2 );
+	padding: var( --wpcmb-space-3 );
 }
 
 .wpcmb-field-row:not( .is-collapsed ) .wpcmb-field-row__header {
+	background: var( --wpcmb-sunken );
 	border-bottom: 1px solid var( --wpcmb-border );
 	border-radius: calc( var( --wpcmb-radius ) - 1px ) calc( var( --wpcmb-radius ) - 1px ) 0 0;
 }
 
+/*
+ * The handle only appears on hover. A drag affordance on every row at rest is
+ * a column of grey dots down the page, and it is the least used control here.
+ */
 .wpcmb-field-row__handle {
-	color: var( --wpcmb-muted );
+	color: var( --wpcmb-faint );
 	cursor: grab;
 	line-height: 1;
+	opacity: 0;
 	padding: 2px;
+	transition: opacity var( --wpcmb-fast ) var( --wpcmb-ease );
+}
+
+.wpcmb-field-row:hover .wpcmb-field-row__handle,
+.wpcmb-field-row__handle:focus-visible {
+	opacity: 1;
 }
 
 .wpcmb-field-row__handle:active {
@@ -338,57 +1046,120 @@
 }
 
 .wpcmb-field-row__title {
+	font-size: 13px;
 	font-weight: 600;
+	letter-spacing: -0.005em;
 }
 
 /*
- * The type badge. A collapsed row is otherwise just a name, so you cannot
- * tell a repeater from a text field without opening it. This is the one
- * piece of decoration that is really information.
+ * The type badge. A collapsed row is otherwise just a name, so you cannot tell
+ * a repeater from a text field without opening it. The one piece of decoration
+ * here that is really information.
  */
 .wpcmb-field-row__type {
-	background: var( --wpcmb-accent-tint );
-	border-radius: 3px;
-	color: var( --wpcmb-accent );
+	background: var( --wpcmb-wash );
+	border-radius: var( --wpcmb-radius-chip );
+	color: var( --wpcmb-muted );
 	font-size: 11px;
 	font-weight: 600;
-	letter-spacing: 0.02em;
-	padding: 2px 7px;
+	letter-spacing: 0.01em;
+	padding: 3px 8px;
 	white-space: nowrap;
 }
 
+.wpcmb-field-row:not( .is-collapsed ) .wpcmb-field-row__type {
+	background: var( --wpcmb-accent-tint );
+	color: var( --wpcmb-accent );
+}
+
+/*
+ * The field key, as a monospace chip you can click to copy.
+ *
+ * This is the string developers retype all day — get_field( 'field_abc123' ) —
+ * and it was previously dead text sitting in the row doing nothing. Monospace
+ * because it is an identifier and should not be mistaken for prose.
+ */
 .wpcmb-field-row__key {
 	background: none;
-	color: var( --wpcmb-muted );
-	font-size: 12px;
+	border: 1px solid transparent;
+	border-radius: var( --wpcmb-radius-chip );
+	color: var( --wpcmb-faint );
+	cursor: pointer;
+	font-family: ui-monospace, "SFMono-Regular", "Cascadia Mono", Consolas, monospace;
+	font-size: 11px;
 	margin-inline-end: auto;
+	max-width: 22ch;
 	overflow: hidden;
+	padding: 3px 7px;
 	text-overflow: ellipsis;
+	transition: background-color var( --wpcmb-fast ) var( --wpcmb-ease ),
+		border-color var( --wpcmb-fast ) var( --wpcmb-ease ),
+		color var( --wpcmb-fast ) var( --wpcmb-ease );
+	white-space: nowrap;
+}
+
+.wpcmb-field-row__key:hover {
+	background: var( --wpcmb-wash );
+	border-color: var( --wpcmb-border );
+	color: var( --wpcmb-text );
+}
+
+/* Confirmation lands on the chip itself, where the pointer already is. */
+.wpcmb-field-row__key.is-copied {
+	background: var( --wpcmb-accent-tint );
+	border-color: var( --wpcmb-accent );
+	color: var( --wpcmb-accent );
 }
 
 .wpcmb-field-row__toggle,
-.wpcmb-field-row__remove {
+.wpcmb-field-row__remove,
+.wpcmb-field-row__duplicate {
 	background: none;
 	border: 0;
-	border-radius: 3px;
+	border-radius: var( --wpcmb-radius-chip );
+	color: var( --wpcmb-muted );
 	cursor: pointer;
-	font-size: 15px;
+	font-size: 14px;
 	line-height: 1;
-	padding: 4px 7px;
+	padding: 5px 7px;
+	transition: background-color var( --wpcmb-fast ) var( --wpcmb-ease ),
+		color var( --wpcmb-fast ) var( --wpcmb-ease ),
+		opacity var( --wpcmb-fast ) var( --wpcmb-ease );
+}
+
+/*
+ * Destructive and duplicate controls stay hidden until the row is hovered or
+ * something inside it has focus. The toggle is always visible: it is the one
+ * you reach for, and a row you cannot open is worse than a busy row.
+ */
+.wpcmb-field-row__remove,
+.wpcmb-field-row__duplicate {
+	opacity: 0;
+}
+
+.wpcmb-field-row:hover .wpcmb-field-row__remove,
+.wpcmb-field-row:hover .wpcmb-field-row__duplicate,
+.wpcmb-field-row:focus-within .wpcmb-field-row__remove,
+.wpcmb-field-row:focus-within .wpcmb-field-row__duplicate {
+	opacity: 1;
 }
 
 .wpcmb-field-row__toggle {
 	color: var( --wpcmb-muted );
-	transition: transform 0.15s ease;
-}
-
-.wpcmb-field-row__remove {
-	color: var( --wpcmb-danger );
+	font-size: 15px;
+	transition: transform var( --wpcmb-base ) var( --wpcmb-ease ),
+		background-color var( --wpcmb-fast ) var( --wpcmb-ease );
 }
 
 .wpcmb-field-row__toggle:hover,
+.wpcmb-field-row__duplicate:hover {
+	background: var( --wpcmb-wash );
+	color: var( --wpcmb-accent );
+}
+
 .wpcmb-field-row__remove:hover {
-	background: rgba( 128, 128, 128, 0.14 );
+	background: var( --wpcmb-danger-tint );
+	color: var( --wpcmb-danger );
 }
 
 .wpcmb-field-row.is-collapsed .wpcmb-field-row__toggle {
@@ -396,7 +1167,7 @@
 }
 
 .wpcmb-field-row__body {
-	padding: 14px;
+	padding: var( --wpcmb-space-5 );
 }
 
 .wpcmb-field-row.is-collapsed .wpcmb-field-row__body {
@@ -405,9 +1176,9 @@
 
 .wpcmb-field-row__grid {
 	display: grid;
-	gap: var( --wpcmb-gap );
-	grid-template-columns: repeat( auto-fit, minmax( 190px, 1fr ) );
-	margin-bottom: var( --wpcmb-gap );
+	gap: var( --wpcmb-space-4 );
+	grid-template-columns: repeat( auto-fit, minmax( 200px, 1fr ) );
+	margin-bottom: var( --wpcmb-space-4 );
 }
 
 .wpcmb-field-row__control {
@@ -418,55 +1189,11 @@
 	width: auto;
 }
 
-/* Builder toolbar. */
-
-.wpcmb-toolbar {
-	align-items: center;
-	display: flex;
-	flex-wrap: wrap;
-	gap: 8px;
-	margin-bottom: 10px;
-}
-
-.wpcmb-toolbar__search {
-	flex: 1 1 180px;
-	max-width: 320px;
-}
-
-.wpcmb-toolbar__count {
-	color: var( --wpcmb-muted );
-	font-size: 12px;
-	font-variant-numeric: tabular-nums;
-}
-
-.wpcmb-toolbar__actions {
-	display: flex;
-	gap: 4px;
-	margin-inline-start: auto;
-}
-
-.wpcmb-toolbar__button {
-	background: none;
-	border: 1px solid var( --wpcmb-border );
-	border-radius: var( --wpcmb-radius );
-	color: var( --wpcmb-muted );
-	cursor: pointer;
-	font-size: 12px;
-	padding: 4px 10px;
-}
-
-.wpcmb-toolbar__button:hover {
-	border-color: var( --wpcmb-accent );
-	color: var( --wpcmb-accent );
-}
-
-/* Field row icon, required marker and duplicate control. */
-
 .wpcmb-field-row__icon {
-	color: var( --wpcmb-muted );
-	font-size: 17px;
-	height: 17px;
-	width: 17px;
+	color: var( --wpcmb-faint );
+	font-size: 18px;
+	height: 18px;
+	width: 18px;
 }
 
 .wpcmb-field-row:not( .is-collapsed ) .wpcmb-field-row__icon {
@@ -480,78 +1207,125 @@
 	text-decoration: none;
 }
 
-.wpcmb-field-row__duplicate {
-	background: none;
-	border: 0;
-	border-radius: 3px;
-	color: var( --wpcmb-muted );
-	cursor: pointer;
-	font-size: 14px;
-	line-height: 1;
-	padding: 4px 7px;
-}
-
-.wpcmb-field-row__duplicate:hover {
-	background: rgba( 128, 128, 128, 0.14 );
-	color: var( --wpcmb-accent );
-}
-
 .wpcmb-field-row[hidden] {
 	display: none;
 }
 
-/* Field setting tabs. */
+/* -------------------------------------------------------------------------
+ * Builder toolbar.
+ * ---------------------------------------------------------------------- */
 
+.wpcmb-toolbar {
+	align-items: center;
+	display: flex;
+	flex-wrap: wrap;
+	gap: var( --wpcmb-space-2 );
+	margin-bottom: var( --wpcmb-space-3 );
+}
+
+.wpcmb-toolbar__search {
+	flex: 1 1 200px;
+	max-width: 340px;
+}
+
+.wpcmb-toolbar__count {
+	color: var( --wpcmb-faint );
+	font-size: 12px;
+	font-variant-numeric: tabular-nums;
+}
+
+.wpcmb-toolbar__actions {
+	display: flex;
+	gap: var( --wpcmb-space-1 );
+	margin-inline-start: auto;
+}
+
+.wpcmb-toolbar__button {
+	background: none;
+	border: 1px solid var( --wpcmb-border );
+	border-radius: var( --wpcmb-radius-sm );
+	color: var( --wpcmb-muted );
+	cursor: pointer;
+	font-size: 12px;
+	font-weight: 500;
+	padding: 5px 11px;
+	transition: background-color var( --wpcmb-fast ) var( --wpcmb-ease ),
+		border-color var( --wpcmb-fast ) var( --wpcmb-ease ),
+		color var( --wpcmb-fast ) var( --wpcmb-ease );
+}
+
+.wpcmb-toolbar__button:hover {
+	background: var( --wpcmb-accent-tint );
+	border-color: var( --wpcmb-accent );
+	color: var( --wpcmb-accent );
+}
+
+/* -------------------------------------------------------------------------
+ * Field setting tabs.
+ * ---------------------------------------------------------------------- */
+
+/*
+ * A segmented control on a sunken track rather than folder tabs. Folder tabs
+ * inside a card that is itself inside a page of cards is one nesting metaphor
+ * too many; a track reads as a switch between views of the same thing.
+ */
 .wpcmb-tabset__list {
-	border-bottom: 1px solid var( --wpcmb-border );
+	background: var( --wpcmb-sunken );
+	border: 1px solid var( --wpcmb-border );
+	border-radius: var( --wpcmb-radius-sm );
 	display: flex;
 	flex-wrap: wrap;
 	gap: 2px;
-	margin-bottom: 14px;
+	margin-bottom: var( --wpcmb-space-4 );
+	padding: 3px;
 }
 
 .wpcmb-tabset__tab {
 	background: none;
-	border: 1px solid transparent;
-	border-bottom: 0;
-	border-radius: var( --wpcmb-radius ) var( --wpcmb-radius ) 0 0;
+	border: 0;
+	border-radius: var( --wpcmb-radius-chip );
 	color: var( --wpcmb-muted );
 	cursor: pointer;
 	font-size: 12px;
-	font-weight: 600;
-	margin-bottom: -1px;
-	padding: 7px 13px;
+	font-weight: 500;
+	padding: 6px 13px;
+	transition: background-color var( --wpcmb-fast ) var( --wpcmb-ease ),
+		color var( --wpcmb-fast ) var( --wpcmb-ease );
 }
 
 .wpcmb-tabset__tab:hover {
-	color: var( --wpcmb-accent );
+	color: var( --wpcmb-text );
 }
 
 .wpcmb-tabset__tab.is-active {
 	background: var( --wpcmb-surface );
-	border-color: var( --wpcmb-border );
-	border-bottom-color: var( --wpcmb-surface );
+	box-shadow: 0 1px 2px rgba( 16, 20, 26, 0.06 );
 	color: var( --wpcmb-text );
+	font-weight: 600;
 }
 
 .wpcmb-tabset__panel[hidden] {
 	display: none;
 }
 
-/* Sub sections: settings, logic, sub fields, layouts. */
+/* -------------------------------------------------------------------------
+ * Sub sections: settings, logic, sub fields, layouts.
+ * ---------------------------------------------------------------------- */
 
 .wpcmb-subsection {
 	border-top: 1px solid var( --wpcmb-border );
-	margin-top: 14px;
-	padding-top: 10px;
+	margin-top: var( --wpcmb-space-4 );
+	padding-top: var( --wpcmb-space-3 );
 }
 
 .wpcmb-subsection > summary {
+	border-radius: var( --wpcmb-radius-chip );
 	cursor: pointer;
 	list-style: none;
-	margin-bottom: 10px;
-	padding-inline-start: 14px;
+	margin-bottom: var( --wpcmb-space-3 );
+	padding: 2px 0 2px 16px;
 	position: relative;
+	transition: color var( --wpcmb-fast ) var( --wpcmb-ease );
 	user-select: none;
 }
 
@@ -565,11 +1339,11 @@
 	border-bottom: 3px solid transparent;
 	border-top: 3px solid transparent;
 	content: '';
-	inset-inline-start: 2px;
+	inset-inline-start: 3px;
 	position: absolute;
 	top: 50%;
 	transform: translateY( -50% );
-	transition: transform 0.15s ease;
+	transition: transform var( --wpcmb-base ) var( --wpcmb-ease );
 }
 
 .wpcmb-subsection[open] > summary::before {
@@ -587,12 +1361,13 @@
  */
 .wpcmb-subsection .wpcmb-builder__list {
 	border-inline-start: var( --wpcmb-rail ) solid var( --wpcmb-border );
-	border-radius: 2px;
-	padding-inline-start: 12px;
+	border-radius: 1px;
+	padding-inline-start: var( --wpcmb-space-4 );
+	transition: border-color var( --wpcmb-base ) var( --wpcmb-ease );
 }
 
 .wpcmb-subsection .wpcmb-builder__list:hover {
-	border-inline-start-color: var( --wpcmb-accent );
+	border-inline-start-color: var( --wpcmb-accent-line );
 }
 
 /* Flexible content layouts. */
@@ -600,12 +1375,14 @@
 .wpcmb-layout {
 	background: var( --wpcmb-sunken );
 	border: 1px solid var( --wpcmb-border );
-	border-radius: var( --wpcmb-radius );
-	margin-bottom: 10px;
-	padding: 12px 14px;
+	border-radius: var( --wpcmb-radius-sm );
+	margin-bottom: var( --wpcmb-space-3 );
+	padding: var( --wpcmb-space-4 );
 }
 
-/* Location rules. */
+/* -------------------------------------------------------------------------
+ * Location rules.
+ * ---------------------------------------------------------------------- */
 
 /*
  * A plain-language restatement of the rules, updated as they are edited.
@@ -615,9 +1392,10 @@
 .wpcmb-location-summary {
 	background: var( --wpcmb-accent-tint );
 	border-inline-start: 3px solid var( --wpcmb-accent );
-	border-radius: 0 var( --wpcmb-radius ) var( --wpcmb-radius ) 0;
-	margin: 0 0 12px;
-	padding: 9px 13px;
+	border-radius: 0 var( --wpcmb-radius-sm ) var( --wpcmb-radius-sm ) 0;
+	line-height: 1.6;
+	margin: 0 0 var( --wpcmb-space-3 );
+	padding: var( --wpcmb-space-3 ) var( --wpcmb-space-4 );
 }
 
 .wpcmb-location-summary.is-empty {
@@ -626,18 +1404,32 @@
 	color: var( --wpcmb-muted );
 }
 
+.wpcmb-rule-group {
+	background: var( --wpcmb-surface );
+	border: 1px solid var( --wpcmb-border );
+	border-radius: var( --wpcmb-radius );
+	box-shadow: var( --wpcmb-shadow );
+	margin-bottom: var( --wpcmb-space-2 );
+	padding: var( --wpcmb-space-4 );
+	transition: border-color var( --wpcmb-fast ) var( --wpcmb-ease );
+}
+
+.wpcmb-rule-group:hover {
+	border-color: var( --wpcmb-border-strong );
+}
+
 .wpcmb-rule-group__header {
 	align-items: center;
 	display: flex;
-	gap: 8px;
-	margin-bottom: 10px;
+	gap: var( --wpcmb-space-2 );
+	margin-bottom: var( --wpcmb-space-3 );
 }
 
 .wpcmb-rule-group__title {
-	color: var( --wpcmb-muted );
+	color: var( --wpcmb-faint );
 	font-size: 11px;
 	font-weight: 600;
-	letter-spacing: 0.04em;
+	letter-spacing: 0.05em;
 	margin-inline-end: auto;
 	text-transform: uppercase;
 }
@@ -645,34 +1437,36 @@
 .wpcmb-rule-group__buttons {
 	display: flex;
 	gap: 2px;
+	opacity: 0;
+	transition: opacity var( --wpcmb-fast ) var( --wpcmb-ease );
+}
+
+.wpcmb-rule-group:hover .wpcmb-rule-group__buttons,
+.wpcmb-rule-group:focus-within .wpcmb-rule-group__buttons {
+	opacity: 1;
 }
 
 .wpcmb-rule-group__action {
 	background: none;
 	border: 0;
-	border-radius: 3px;
+	border-radius: var( --wpcmb-radius-chip );
 	color: var( --wpcmb-muted );
 	cursor: pointer;
 	font-size: 14px;
 	line-height: 1;
-	padding: 4px 7px;
+	padding: 5px 7px;
+	transition: background-color var( --wpcmb-fast ) var( --wpcmb-ease ),
+		color var( --wpcmb-fast ) var( --wpcmb-ease );
 }
 
 .wpcmb-rule-group__action:hover {
-	background: rgba( 128, 128, 128, 0.14 );
+	background: var( --wpcmb-wash );
 	color: var( --wpcmb-accent );
 }
 
 .wpcmb-rule-group__action--delete:hover {
+	background: var( --wpcmb-danger-tint );
 	color: var( --wpcmb-danger );
-}
-
-.wpcmb-rule-group {
-	background: var( --wpcmb-surface );
-	border: 1px solid var( --wpcmb-border );
-	border-radius: var( --wpcmb-radius );
-	margin-bottom: 8px;
-	padding: 12px 14px;
 }
 
 /*
@@ -682,13 +1476,13 @@
  */
 .wpcmb-rule-group__or {
 	align-items: center;
-	color: var( --wpcmb-muted );
+	color: var( --wpcmb-faint );
 	display: flex;
 	font-size: 11px;
 	font-weight: 600;
-	gap: 10px;
-	letter-spacing: 0.08em;
-	margin: -4px 0 10px;
+	gap: var( --wpcmb-space-3 );
+	letter-spacing: 0.1em;
+	margin: -2px 0 var( --wpcmb-space-3 );
 	text-transform: uppercase;
 }
 
@@ -701,48 +1495,50 @@
 }
 
 /*
- * A rule reads left to right as a sentence: icon, subject, comparison,
- * value. The columns are sized to that reading rather than evenly, so the
- * short operator does not take the same room as the value it qualifies.
+ * A rule reads left to right as a sentence: icon, subject, comparison, value.
+ * The columns are sized to that reading rather than evenly, so the short
+ * operator does not take the same room as the value it qualifies.
  */
 .wpcmb-rule {
 	align-items: start;
+	border-radius: var( --wpcmb-radius-sm );
 	display: grid;
-	gap: 8px;
+	gap: var( --wpcmb-space-2 );
 	grid-template-columns: 34px 20px minmax( 0, 1.4fr ) minmax( 0, 1fr ) minmax( 0, 1.8fr ) 30px;
-	padding: 6px 0;
+	padding: var( --wpcmb-space-1 ) 0;
 	position: relative;
 }
 
 /*
- * Rules inside a group are ANDed. The connector draws that relationship up
- * to the rule above, which is otherwise only implied by them sharing a box.
+ * Rules inside a group are ANDed. The connector draws that relationship up to
+ * the rule above, which is otherwise only implied by them sharing a box.
  */
 .wpcmb-rule.is-joined::before {
 	background: var( --wpcmb-border );
 	content: '';
+	height: 12px;
 	inset-block-start: -6px;
 	inset-inline-start: 16px;
 	position: absolute;
 	width: 1px;
-	height: 12px;
 }
 
 .wpcmb-rule__joiner {
-	color: var( --wpcmb-muted );
+	color: var( --wpcmb-faint );
 	font-size: 11px;
 	font-weight: 600;
-	letter-spacing: 0.04em;
-	line-height: 30px;
+	letter-spacing: 0.05em;
+	line-height: 32px;
 	text-align: end;
 	text-transform: uppercase;
 }
 
 .wpcmb-rule__icon {
-	color: var( --wpcmb-muted );
+	color: var( --wpcmb-faint );
 	font-size: 18px;
 	height: 18px;
-	line-height: 30px;
+	line-height: 32px;
+	transition: color var( --wpcmb-fast ) var( --wpcmb-ease );
 	width: 18px;
 }
 
@@ -757,31 +1553,45 @@
 .wpcmb-rule__remove {
 	background: none;
 	border: 0;
-	border-radius: 3px;
-	color: var( --wpcmb-muted );
+	border-radius: var( --wpcmb-radius-chip );
+	color: var( --wpcmb-faint );
 	cursor: pointer;
 	font-size: 15px;
 	line-height: 1;
+	opacity: 0;
 	padding: 6px;
+	transition: background-color var( --wpcmb-fast ) var( --wpcmb-ease ),
+		color var( --wpcmb-fast ) var( --wpcmb-ease ),
+		opacity var( --wpcmb-fast ) var( --wpcmb-ease );
+}
+
+.wpcmb-rule:hover .wpcmb-rule__remove,
+.wpcmb-rule:focus-within .wpcmb-rule__remove {
+	opacity: 1;
 }
 
 .wpcmb-rule__remove:hover {
-	background: rgba( 128, 128, 128, 0.14 );
+	background: var( --wpcmb-danger-tint );
 	color: var( --wpcmb-danger );
 }
 
 .wpcmb-rule__add {
 	background: none;
 	border: 1px dashed var( --wpcmb-border-strong );
-	border-radius: var( --wpcmb-radius );
+	border-radius: var( --wpcmb-radius-sm );
 	color: var( --wpcmb-muted );
 	cursor: pointer;
 	font-size: 12px;
+	font-weight: 500;
 	margin-inline-start: 42px;
-	padding: 5px 12px;
+	padding: 6px 13px;
+	transition: background-color var( --wpcmb-fast ) var( --wpcmb-ease ),
+		border-color var( --wpcmb-fast ) var( --wpcmb-ease ),
+		color var( --wpcmb-fast ) var( --wpcmb-ease );
 }
 
 .wpcmb-rule__add:hover {
+	background: var( --wpcmb-accent-tint );
 	border-color: var( --wpcmb-accent );
 	border-style: solid;
 	color: var( --wpcmb-accent );
@@ -797,7 +1607,7 @@
 	display: flex;
 	flex: 2 1 260px;
 	flex-direction: column;
-	gap: 4px;
+	gap: var( --wpcmb-space-1 );
 	min-width: 0;
 }
 
@@ -810,7 +1620,7 @@
 }
 
 .wpcmb-rule__status {
-	color: var( --wpcmb-muted );
+	color: var( --wpcmb-faint );
 	font-size: 12px;
 }
 
@@ -818,7 +1628,9 @@
 	display: none;
 }
 
-/* Narrow screens: the rule parts stack rather than squeeze. */
+/* -------------------------------------------------------------------------
+ * Narrow screens, down to 320px.
+ * ---------------------------------------------------------------------- */
 
 @media screen and ( max-width: 782px ) {
 	/* One column per part, so nothing is squeezed to unreadable width. */
@@ -849,7 +1661,34 @@
 	.wpcmb-field-row__key {
 		flex: 1 0 100%;
 		margin-inline-end: 0;
+		max-width: none;
 		order: 10;
+	}
+
+	.wpcmb-field-row__body {
+		padding: var( --wpcmb-space-4 );
+	}
+
+	/*
+	 * Hover is not a thing on a touch screen, so everything that hides behind
+	 * it has to be visible from the start here.
+	 */
+	.wpcmb-field-row__handle,
+	.wpcmb-field-row__remove,
+	.wpcmb-field-row__duplicate,
+	.wpcmb-rule__remove,
+	.wpcmb-rule-group__buttons {
+		opacity: 1;
+	}
+}
+
+@media ( hover: none ) {
+	.wpcmb-field-row__handle,
+	.wpcmb-field-row__remove,
+	.wpcmb-field-row__duplicate,
+	.wpcmb-rule__remove,
+	.wpcmb-rule-group__buttons {
+		opacity: 1;
 	}
 }
 

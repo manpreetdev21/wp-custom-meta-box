@@ -83,6 +83,8 @@ const globals = {
 			fieldCountFiltered: '%1$d of %2$d fields',
 			wrapperClass: 'CSS class',
 			wrapperId: 'CSS id',
+			copyKey: 'Copy field name',
+			copiedKey: 'Field name copied',
 			fieldKey: 'Field key',
 			tabGeneral: 'General',
 			tabValidation: 'Validation',
@@ -1181,4 +1183,66 @@ test( 'a stored no stays off rather than reading as a truthy string', () => {
 	const { control } = multiplePage( { multiple: '0' } );
 
 	assert.equal( control.value, '' );
+} );
+
+/* -------------------------------------------------------------------------
+ * The field-name chip.
+ * ---------------------------------------------------------------------- */
+
+test( 'the field name is a real button, not decorative text', () => {
+	const page = builderPage();
+
+	page.addField();
+
+	const chip = page.$( '.wpcmb-field-row__key' );
+
+	// A button rather than a styled <code>: it does something, so it belongs
+	// in the tab order and needs an accessible name.
+	assert.equal( chip.tagName, 'BUTTON' );
+	assert.equal( chip.type, 'button', 'and never submits the form it sits in' );
+	assert.equal( chip.getAttribute( 'aria-label' ), 'Copy field name' );
+} );
+
+test( 'clicking the field name copies it', async () => {
+	const page = builderPage();
+	let copied = null;
+
+	page.window.navigator.clipboard = {
+		writeText: ( text ) => {
+			copied = text;
+
+			return Promise.resolve();
+		},
+	};
+
+	page.addField();
+	page.fill( page.$( '.wpcmb-field-row__body input[type="text"]' ), 'Hero heading' );
+
+	const chip = page.$( '.wpcmb-field-row__key' );
+
+	page.click( chip );
+
+	await new Promise( ( resolve ) => setTimeout( resolve, 0 ) );
+
+	assert.equal( copied, 'hero_heading', 'the stored name is what lands on the clipboard' );
+	assert.ok( chip.classList.contains( 'is-copied' ), 'and the chip confirms it' );
+	assert.equal(
+		chip.getAttribute( 'aria-label' ),
+		'Field name copied',
+		'announced too, not only shown'
+	);
+} );
+
+test( 'a clipboard the browser will not give us is not reported as a copy', () => {
+	// The Clipboard API needs a secure context. An admin on plain http has no
+	// navigator.clipboard at all, and claiming a copy that did not happen is
+	// worse than staying quiet — the value is still on screen to select.
+	const page = builderPage();
+
+	page.addField();
+
+	const chip = page.$( '.wpcmb-field-row__key' );
+
+	assert.doesNotThrow( () => page.click( chip ) );
+	assert.equal( chip.classList.contains( 'is-copied' ), false );
 } );

@@ -249,7 +249,7 @@ final class ToolsPage extends Module {
 							</fieldset>
 
 							<p>
-								<button type="submit" class="button button-primary" name="wpcmb_tool" value="export_json">
+								<button type="submit" class="wpcmb-btn wpcmb-btn--primary" name="wpcmb_tool" value="export_json">
 									<?php esc_html_e( 'Download JSON', 'wp-custom-meta-box' ); ?>
 								</button>
 							</p>
@@ -265,7 +265,7 @@ final class ToolsPage extends Module {
 						<?php wp_nonce_field( self::NONCE ); ?>
 						<p><input type="file" name="wpcmb_import" accept="application/json,.json" required /></p>
 						<p>
-							<button type="submit" class="button button-primary" name="wpcmb_tool" value="import_json">
+							<button type="submit" class="wpcmb-btn wpcmb-btn--primary" name="wpcmb_tool" value="import_json">
 								<?php esc_html_e( 'Import', 'wp-custom-meta-box' ); ?>
 							</button>
 						</p>

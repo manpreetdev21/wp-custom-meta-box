@@ -177,6 +177,7 @@ final class Plugin {
 			Admin\Menu::class,
 			Admin\Assets::class,
 			Admin\FieldGroupList::class,
+			Admin\GroupsPage::class,
 			Admin\FieldGroupEditor::class,
 			Admin\MetaBoxes::class,
 			Admin\Ajax::class,
