@@ -29,11 +29,8 @@ final class FieldGroupList extends Module {
 
 	/**
 	 * Query arg carrying the id to duplicate.
-	 *
-	 * Public because GroupsPage links to the same handler: one duplicate
-	 * action, reachable from either list, rather than two that could drift.
 	 */
-	public const ACTION_DUPLICATE = 'wpcmb_duplicate';
+	private const ACTION_DUPLICATE = 'wpcmb_duplicate';
 
 	/**
 	 * Only load in the admin.
