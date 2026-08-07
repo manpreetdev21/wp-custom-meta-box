@@ -9,7 +9,6 @@ Field groups, meta boxes and a developer-friendly field API for WordPress.
 - **Text Domain:** `wp-custom-meta-box`
 - **Namespace:** `WPCMB`
 
-Original work. No ACF code, markup, or assets are used or derived from.
 
 ## Build status
 
