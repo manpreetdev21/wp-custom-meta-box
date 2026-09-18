@@ -289,7 +289,8 @@ final class SettingsPage extends Module {
 		?>
 		<div class="wrap wpcmb-wrap">
 			<h1><?php esc_html_e( 'Custom Meta Box Settings', 'wp-custom-meta-box' ); ?></h1>
-			<form action="options.php" method="post">
+			<p class="wpcmb-lede"><?php esc_html_e( 'How the plugin looks while you work, and what it leaves behind when it goes.', 'wp-custom-meta-box' ); ?></p>
+			<form action="options.php" method="post" class="wpcmb-settings-form">
 				<?php
 				settings_fields( self::OPTION_GROUP );
 				do_settings_sections( self::SLUG );

@@ -22,7 +22,8 @@
  */
 .wpcmb-group-fields,
 .wpcmb-block-editor,
-.wpcmb-block__placeholder {
+.wpcmb-block__placeholder,
+.wpcmb-metabox {
 	/*
 	 * The same tokens the plugin's own screens use, so a field renders
 	 * identically whether it is in the builder or in a meta box on a post.
@@ -39,6 +40,7 @@
 	--wpcmb-faint: #8c8f94;
 	--wpcmb-accent: var( --wp-admin-theme-color, #2271b1 );
 	--wpcmb-accent-tint: rgba( 34, 113, 177, 0.07 );
+	--wpcmb-accent-line: rgba( 34, 113, 177, 0.35 );
 	--wpcmb-danger: #b32d2e;
 	--wpcmb-danger-tint: rgba( 179, 45, 46, 0.07 );
 	--wpcmb-wash: rgba( 16, 20, 26, 0.05 );
@@ -53,7 +55,11 @@
 	--wpcmb-ease: cubic-bezier( 0.2, 0, 0, 1 );
 	--wpcmb-fast: 150ms;
 	--wpcmb-base: 200ms;
+}
 
+.wpcmb-group-fields,
+.wpcmb-block-editor,
+.wpcmb-block__placeholder {
 	display: flex;
 	flex-wrap: wrap;
 	gap: var( --wpcmb-field-gap );
@@ -62,7 +68,8 @@
 @media ( prefers-color-scheme: dark ) {
 	.wpcmb-group-fields,
 	.wpcmb-block-editor,
-	.wpcmb-block__placeholder {
+	.wpcmb-block__placeholder,
+	.wpcmb-metabox {
 		--wpcmb-surface: #1c1e21;
 		--wpcmb-sunken: #17191c;
 		--wpcmb-border: #303338;
@@ -71,6 +78,7 @@
 		--wpcmb-faint: #82868b;
 		--wpcmb-accent: var( --wp-admin-theme-color, #72aee6 );
 		--wpcmb-accent-tint: rgba( 114, 174, 230, 0.12 );
+		--wpcmb-accent-line: rgba( 114, 174, 230, 0.4 );
 		--wpcmb-danger: #f86368;
 		--wpcmb-danger-tint: rgba( 248, 99, 104, 0.12 );
 		--wpcmb-wash: rgba( 255, 255, 255, 0.07 );
@@ -281,11 +289,29 @@
 	background-position: left 10px center;
 }
 
+/*
+ * A multiple select is a listbox, not a dropdown: no chevron, and the padding
+ * moves off the box and onto the rows so the options read as a list you pick
+ * from rather than as text crammed against a border.
+ *
+ * The selected row keeps the browser's own highlight: a Chromium listbox
+ * ignores a background set on `option:checked`, and a rule that only lands in
+ * one engine is worse than none.
+ */
 .wpcmb-group-fields select.wpcmb-input[multiple],
 .wpcmb-block-editor select.wpcmb-input[multiple],
 .wpcmb-form select.wpcmb-input[multiple] {
 	background-image: none;
-	padding-inline-end: 11px;
+	padding: 4px;
+	scrollbar-width: thin;
+}
+
+.wpcmb-group-fields select.wpcmb-input[multiple] option,
+.wpcmb-block-editor select.wpcmb-input[multiple] option,
+.wpcmb-form select.wpcmb-input[multiple] option {
+	border-radius: var( --wpcmb-radius-chip );
+	margin-bottom: 1px;
+	padding: 6px 9px;
 }
 
 .wpcmb-group-fields textarea.wpcmb-input,
@@ -399,7 +425,14 @@ input.wpcmb-input[type="datetime-local"] {
 .wpcmb-choices {
 	display: flex;
 	flex-direction: column;
-	gap: 5px;
+	gap: 7px;
+}
+
+/* The control and its label are one line, centred on each other. */
+.wpcmb-choices > .wpcmb-choice {
+	align-items: center;
+	display: flex;
+	gap: 8px;
 }
 
 .wpcmb-choices--button_group {
@@ -424,7 +457,13 @@ input.wpcmb-input[type="datetime-local"] {
 	border-radius: 0 var( --wpcmb-radius ) var( --wpcmb-radius ) 0;
 }
 
-.wpcmb-choices--button_group .wpcmb-choice input {
+/*
+ * Both variants draw their own control — a segment, a star — so the radio
+ * underneath is taken out of the layout rather than hidden outright, which
+ * would take it out of the tab order with it.
+ */
+.wpcmb-choices--button_group .wpcmb-choice input,
+.wpcmb-choices--rating .wpcmb-choice input {
 	position: absolute;
 	opacity: 0;
 	pointer-events: none;
@@ -445,6 +484,231 @@ input.wpcmb-input[type="datetime-local"] {
 	outline: 2px solid var( --wpcmb-accent );
 	outline-offset: 1px;
 	position: relative;
+}
+
+/*
+ * Action buttons.
+ *
+ * Every button a field draws — select media, add row, clear a signature — was
+ * core's `.button`, which is a different shape, height and border radius from
+ * the controls beside it. These are ours, and they are the same button the
+ * plugin's own screens use; the rules are repeated here rather than shared
+ * because admin.css does not load on a post, term or user screen.
+ */
+
+.wpcmb-btn {
+	align-items: center;
+	background: var( --wpcmb-surface );
+	border: 1px solid var( --wpcmb-border-strong );
+	border-radius: var( --wpcmb-radius-sm );
+	box-shadow: none;
+	color: inherit;
+	cursor: pointer;
+	display: inline-flex;
+	font-size: 13px;
+	font-weight: 500;
+	gap: 6px;
+	line-height: 1.4;
+	min-height: 32px;
+	padding: 6px 12px;
+	text-decoration: none;
+	transition: background-color var( --wpcmb-fast ) var( --wpcmb-ease ),
+		border-color var( --wpcmb-fast ) var( --wpcmb-ease ),
+		color var( --wpcmb-fast ) var( --wpcmb-ease );
+}
+
+.wpcmb-btn:hover:not( [disabled] ) {
+	background: var( --wpcmb-sunken );
+	border-color: var( --wpcmb-accent );
+	color: var( --wpcmb-accent );
+}
+
+.wpcmb-btn[disabled] {
+	cursor: default;
+	opacity: 0.5;
+}
+
+/* A secondary action next to a primary one: no border until you reach it. */
+.wpcmb-btn--quiet {
+	background: none;
+	border-color: transparent;
+	color: var( --wpcmb-muted );
+}
+
+.wpcmb-btn--quiet:hover:not( [disabled] ) {
+	background: var( --wpcmb-wash );
+	border-color: transparent;
+}
+
+.wpcmb-btn--danger {
+	color: var( --wpcmb-danger );
+}
+
+.wpcmb-btn--danger:hover:not( [disabled] ) {
+	background: var( --wpcmb-danger-tint );
+	border-color: var( --wpcmb-danger );
+	color: var( --wpcmb-danger );
+}
+/*
+ * Multiple select.
+ *
+ * The native listbox is still in the form — hidden, not removed — and this is
+ * what an editor sees instead: the choices already made, a button that opens
+ * a searchable checklist, and nothing to ctrl-click. The panel floats, so the
+ * control keeps the height of a single input whatever the list holds.
+ */
+
+.wpcmb-multiselect {
+	position: relative;
+}
+
+/* Still submitted, still the value; just not drawn or tabbed into. */
+.wpcmb-multiselect__native {
+	clip-path: inset( 50% );
+	height: 1px;
+	overflow: hidden;
+	position: absolute;
+	white-space: nowrap;
+	width: 1px;
+}
+
+.wpcmb-multiselect__chips {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+	margin-bottom: 8px;
+}
+
+.wpcmb-multiselect__chips[hidden] {
+	display: none;
+}
+
+.wpcmb-multiselect__chip {
+	align-items: center;
+	background: var( --wpcmb-accent-tint );
+	border-radius: var( --wpcmb-radius-chip );
+	color: var( --wpcmb-accent );
+	display: inline-flex;
+	font-size: 13px;
+	font-weight: 500;
+	gap: 4px;
+	padding: 3px;
+	padding-inline-start: 10px;
+}
+
+.wpcmb-multiselect__chip-remove {
+	background: none;
+	border: 0;
+	border-radius: 999px;
+	color: inherit;
+	cursor: pointer;
+	font-size: 15px;
+	height: 18px;
+	line-height: 1;
+	padding: 0;
+	width: 18px;
+}
+
+.wpcmb-multiselect__chip-remove:hover {
+	background: var( --wpcmb-danger-tint );
+	color: var( --wpcmb-danger );
+}
+
+.wpcmb-multiselect__trigger {
+	align-items: center;
+	background: var( --wpcmb-surface );
+	border: 1px solid var( --wpcmb-border-strong );
+	border-radius: var( --wpcmb-radius-sm );
+	color: inherit;
+	cursor: pointer;
+	display: flex;
+	font-size: 14px;
+	gap: 8px;
+	justify-content: space-between;
+	min-height: 36px;
+	padding: 6px 11px;
+	text-align: start;
+	transition: border-color var( --wpcmb-fast ) var( --wpcmb-ease );
+	width: 100%;
+}
+
+.wpcmb-multiselect__trigger:hover,
+.wpcmb-multiselect__trigger[aria-expanded="true"] {
+	border-color: var( --wpcmb-accent );
+}
+
+.wpcmb-multiselect__label.is-placeholder {
+	color: var( --wpcmb-faint );
+}
+
+/*
+ * The panel overlaps whatever is under it rather than pushing the form about
+ * as it opens and closes.
+ */
+.wpcmb-multiselect__panel {
+	background: var( --wpcmb-surface );
+	border: 1px solid var( --wpcmb-border );
+	border-radius: var( --wpcmb-radius );
+	box-shadow: var( --wpcmb-shadow-lg );
+	inset-inline: 0;
+	margin-top: 4px;
+	padding: 8px;
+	position: absolute;
+	top: 100%;
+	z-index: 20;
+}
+
+.wpcmb-multiselect__panel[hidden] {
+	display: none;
+}
+
+.wpcmb-multiselect__search {
+	margin-bottom: 6px;
+}
+
+.wpcmb-multiselect__list {
+	max-height: 240px;
+	overflow-y: auto;
+	scrollbar-width: thin;
+}
+
+.wpcmb-multiselect__option {
+	align-items: center;
+	border-radius: var( --wpcmb-radius-chip );
+	cursor: pointer;
+	display: flex;
+	gap: 9px;
+	line-height: 1.4;
+	padding: 6px 8px;
+}
+
+.wpcmb-multiselect__option[hidden] {
+	display: none;
+}
+
+.wpcmb-multiselect__option:hover {
+	background: var( --wpcmb-wash );
+}
+
+.wpcmb-multiselect__option:has( .wpcmb-multiselect__box:checked ) {
+	color: var( --wpcmb-accent );
+	font-weight: 500;
+}
+
+.wpcmb-multiselect__box {
+	flex: none;
+	margin: 0;
+}
+
+.wpcmb-multiselect__empty {
+	color: var( --wpcmb-muted );
+	font-size: 13px;
+	margin: 0;
+	padding: 8px;
+}
+
+.wpcmb-multiselect__empty[hidden] {
+	display: none;
 }
 
 /* Media. */
@@ -925,6 +1189,15 @@ input.wpcmb-input[type="datetime-local"] {
 	max-width: 420px;
 }
 
+/*
+ * Nothing encoded yet, nothing to frame. The variant rule above is more
+ * specific than the shared `:empty` one, so it has to say this itself.
+ */
+.wpcmb-enhanced--qr .wpcmb-enhanced__preview:empty,
+.wpcmb-enhanced--barcode .wpcmb-enhanced__preview:empty {
+	display: none;
+}
+
 /* Repeater. */
 
 .wpcmb-repeater__rows {
@@ -979,10 +1252,41 @@ input.wpcmb-input[type="datetime-local"] {
 	border-radius: calc( var( --wpcmb-radius ) - 1px ) calc( var( --wpcmb-radius ) - 1px ) 0 0;
 }
 
+/*
+ * The row controls.
+ *
+ * All five are the same shape: a 26px square that holds a 16px icon drawn at
+ * one stroke weight. Glyphs — an arrow, a multiplication sign, a hamburger —
+ * each arrive at their own size and baseline, so a row of them never lines
+ * up; these do, and they take their colour from the button so hover, danger
+ * and disabled are one rule each rather than one per icon.
+ */
+
+.wpcmb-svg {
+	display: block;
+	flex: none;
+}
+
+.wpcmb-repeater__handle,
+.wpcmb-repeater__toggle,
+.wpcmb-repeater__buttons button {
+	align-items: center;
+	background: none;
+	border: 0;
+	border-radius: var( --wpcmb-radius-chip );
+	color: var( --wpcmb-faint );
+	display: inline-flex;
+	flex: none;
+	height: 26px;
+	justify-content: center;
+	padding: 0;
+	transition: background-color var( --wpcmb-fast ) var( --wpcmb-ease ),
+		color var( --wpcmb-fast ) var( --wpcmb-ease );
+	width: 26px;
+}
+
 .wpcmb-repeater__handle {
-	color: var( --wpcmb-muted );
 	cursor: grab;
-	line-height: 1;
 }
 
 .wpcmb-repeater__handle:active {
@@ -990,14 +1294,15 @@ input.wpcmb-input[type="datetime-local"] {
 }
 
 .wpcmb-repeater__toggle {
-	background: none;
-	border: 0;
-	border-radius: 3px;
-	color: var( --wpcmb-muted );
 	cursor: pointer;
-	line-height: 1;
-	padding: 3px 5px;
-	transition: transform var( --wpcmb-base ) var( --wpcmb-ease );
+	transition: background-color var( --wpcmb-fast ) var( --wpcmb-ease ),
+		color var( --wpcmb-fast ) var( --wpcmb-ease ),
+		transform var( --wpcmb-base ) var( --wpcmb-ease );
+}
+
+.wpcmb-repeater__toggle:hover {
+	background: var( --wpcmb-wash );
+	color: var( --wpcmb-accent );
 }
 
 .wpcmb-repeater__row.is-collapsed .wpcmb-repeater__toggle {
@@ -1015,13 +1320,7 @@ input.wpcmb-input[type="datetime-local"] {
 }
 
 .wpcmb-repeater__buttons button {
-	background: none;
-	border: 0;
-	border-radius: 3px;
-	color: var( --wpcmb-muted );
 	cursor: pointer;
-	line-height: 1;
-	padding: 4px 6px;
 }
 
 .wpcmb-repeater__buttons button:hover:not( [disabled] ) {
@@ -1030,6 +1329,7 @@ input.wpcmb-input[type="datetime-local"] {
 }
 
 .wpcmb-repeater__remove:hover:not( [disabled] ) {
+	background: var( --wpcmb-danger-tint );
 	color: var( --wpcmb-danger );
 }
 
@@ -1215,6 +1515,61 @@ input.wpcmb-input[type="datetime-local"] {
 	margin: 0 0 0 20px;
 }
 
+/*
+ * Meta box chrome.
+ *
+ * The fields are ours and the box around them is core's, and the join shows:
+ * a soft, rounded, shadowed field list sitting inside a square grey frame.
+ * The class is added through `postbox_classes_*` on our own boxes only, so
+ * none of this can reach a core or third-party meta box beside it.
+ *
+ * The header is the only part that changes shape. Everything core puts in it
+ * — the toggle, the drag handle, the order buttons — is left alone, because
+ * an editor learns those once for the whole screen.
+ */
+
+.wpcmb-metabox {
+	background: var( --wpcmb-surface );
+	border: 1px solid var( --wpcmb-border );
+	border-radius: var( --wpcmb-radius );
+	box-shadow: var( --wpcmb-shadow );
+	transition: border-color var( --wpcmb-base ) var( --wpcmb-ease );
+}
+
+/*
+ * The box being typed in is the one worth marking. A hover lift would fire on
+ * the way past a box on the way to somewhere else, which is noise on a screen
+ * where several of these are stacked.
+ */
+.wpcmb-metabox:focus-within {
+	border-color: var( --wpcmb-accent-line );
+}
+
+.wpcmb-metabox > .postbox-header {
+	background: var( --wpcmb-sunken );
+	border-bottom: 1px solid var( --wpcmb-border );
+	border-radius: var( --wpcmb-radius ) var( --wpcmb-radius ) 0 0;
+}
+
+/* Collapsed, the header is the whole box, so it keeps all four corners. */
+.wpcmb-metabox.closed > .postbox-header {
+	border-bottom: 0;
+	border-radius: var( --wpcmb-radius );
+}
+
+.wpcmb-metabox .hndle {
+	border: 0;
+	font-size: 13px;
+	font-weight: 600;
+	line-height: 1.4;
+	padding: 12px 16px;
+}
+
+.wpcmb-metabox .inside {
+	margin: 0;
+	padding: 16px;
+}
+
 /* A seamless group drops the meta box chrome around it. */
 
 .wpcmb-seamless {
@@ -1249,6 +1604,7 @@ input.wpcmb-input[type="datetime-local"] {
 }
 
 @media ( prefers-reduced-motion: reduce ) {
+	.wpcmb-metabox,
 	.wpcmb-group-fields *,
 	.wpcmb-block-editor * {
 		transition-duration: 0.01ms !important;

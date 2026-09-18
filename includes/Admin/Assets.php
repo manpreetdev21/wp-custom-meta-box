@@ -307,6 +307,11 @@ final class Assets extends Module {
 				'dashicons' => Enhanced::dashicons(),
 				'i18n'      => array(
 					'remove'             => __( 'Remove', 'wp-custom-meta-box' ),
+					'searchOptions'      => __( 'Search options', 'wp-custom-meta-box' ),
+					'selectOptions'      => __( 'Select options', 'wp-custom-meta-box' ),
+					/* translators: %d: number of options chosen. */
+					'selectedCount'      => __( '%d selected', 'wp-custom-meta-box' ),
+					'noMatches'          => __( 'No matches. Try a different search.', 'wp-custom-meta-box' ),
 					'selectMedia'        => __( 'Select media', 'wp-custom-meta-box' ),
 					'iconDashicons'      => __( 'Dashicons', 'wp-custom-meta-box' ),
 					'iconMedia'          => __( 'Media Library', 'wp-custom-meta-box' ),
@@ -425,11 +430,19 @@ final class Assets extends Module {
 	 * @param string $hook Current admin page hook, empty when unavailable.
 	 */
 	private function is_plugin_screen( string $hook ): bool {
+		$screen = get_current_screen();
+
+		// `admin_body_class` passes no hook, and a submenu screen id is the
+		// same string the hook would have been. Without this the body class is
+		// missing on Settings and Tools, which leaves every design token on
+		// those screens unresolved.
+		if ( '' === $hook && $screen instanceof \WP_Screen ) {
+			$hook = $screen->id;
+		}
+
 		if ( str_contains( $hook, '_page_' . Menu::SLUG ) || str_contains( $hook, 'page_wpcmb-' ) ) {
 			return true;
 		}
-
-		$screen = get_current_screen();
 
 		return $screen instanceof \WP_Screen
 			&& ( FieldGroupPostType::POST_TYPE === $screen->post_type || str_starts_with( $screen->id, 'toplevel_page_' . Menu::SLUG ) );

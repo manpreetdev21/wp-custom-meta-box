@@ -30,6 +30,10 @@ const globals = {
 			embedNone: 'Nothing could be embedded from that URL.',
 			qrTooLong: 'That is too long to fit in a QR code.',
 			barcodeUnsupported: 'A barcode can only hold plain ASCII characters.',
+			searchOptions: 'Search options',
+			selectOptions: 'Select options',
+			selectedCount: '%d selected',
+			noMatches: 'No matches. Try a different search.',
 		},
 	},
 };
@@ -379,4 +383,94 @@ test( 'no barcode encoder is exposed, so nothing can quietly start using one', (
 	// comes from a reference, the absence has to be the tested state — this is
 	// what fails if a half-remembered one is added back.
 	assert.equal( encoders().code128, undefined );
+} );
+
+/* -------------------------------------------------------------------------
+ * Multiple select.
+ *
+ * The native select is still the value: the checklist only writes to it. So
+ * every assertion here reads the select, not the thing on screen.
+ * ---------------------------------------------------------------------- */
+
+/**
+ * A page with the multiple select fixture and the script that upgrades it.
+ *
+ * @return {Object} The harness.
+ */
+function multiSelectPage() {
+	return setup( {
+		html: fixture( 'multiselect' ),
+		scripts: [ 'fields.js', 'codes.js', 'enhanced.js' ],
+		globals,
+	} );
+}
+
+test( 'the multiple select keeps the native control, hidden, in the form', () => {
+	const page = multiSelectPage();
+	const select = page.$( 'select[multiple]' );
+
+	assert.ok( select, 'the select is still there' );
+	assert.equal( select.name, 'wpcmb_values[tags][]', 'and still posts its values' );
+	assert.ok( select.classList.contains( 'wpcmb-multiselect__native' ), 'it is hidden by class' );
+	assert.equal( select.getAttribute( 'tabindex' ), '-1', 'and out of the tab order' );
+	assert.ok( page.$( '.wpcmb-multiselect__trigger' ), 'the checklist is drawn in its place' );
+} );
+
+test( 'ticking an option selects it on the native select and shows a chip', () => {
+	const page = multiSelectPage();
+	const select = page.$( 'select[multiple]' );
+	let changes = 0;
+
+	select.addEventListener( 'change', () => {
+		changes += 1;
+	} );
+
+	page.click( page.$( '.wpcmb-multiselect__trigger' ) );
+	page.check( page.$$( '.wpcmb-multiselect__box' )[ 1 ], true );
+
+	assert.deepEqual(
+		Array.from( select.selectedOptions ).map( ( option ) => option.value ),
+		[ 'green' ]
+	);
+	assert.equal( changes, 1, 'conditional logic is told the value changed' );
+	assert.equal( page.$$( '.wpcmb-multiselect__chip' ).length, 1, 'the choice is visible' );
+	assert.equal( page.$( '.wpcmb-multiselect__label' ).textContent, '1 selected' );
+} );
+
+test( 'removing a chip deselects the option', () => {
+	const page = multiSelectPage();
+	const select = page.$( 'select[multiple]' );
+
+	page.check( page.$$( '.wpcmb-multiselect__box' )[ 0 ], true );
+	page.click( page.$( '.wpcmb-multiselect__chip-remove' ) );
+
+	assert.equal( select.selectedOptions.length, 0 );
+	assert.equal( page.$$( '.wpcmb-multiselect__chip' ).length, 0 );
+	assert.equal( page.$$( '.wpcmb-multiselect__box' )[ 0 ].checked, false, 'and the box clears' );
+} );
+
+test( 'searching narrows the list without losing what is already chosen', () => {
+	const page = multiSelectPage();
+
+	page.check( page.$$( '.wpcmb-multiselect__box' )[ 2 ], true );
+	page.fill( page.$( '.wpcmb-multiselect__search' ), 'gre' );
+
+	const shown = page.$$( '.wpcmb-multiselect__option' ).filter( ( row ) => ! row.hidden );
+
+	assert.equal( shown.length, 1, 'only the match is listed' );
+	assert.equal( page.$( 'select[multiple]' ).selectedOptions[ 0 ].value, 'blue', 'the choice stands' );
+
+	page.fill( page.$( '.wpcmb-multiselect__search' ), 'nothing here' );
+
+	assert.equal( page.$( '.wpcmb-multiselect__empty' ).hidden, false, 'an empty search says so' );
+} );
+
+test( 'a second pass over the same page does not build the control twice', () => {
+	const page = multiSelectPage();
+
+	// A repeater row fires the enhance event over a container that may hold
+	// controls already wired; building those again would double every chip.
+	page.window.wpcmb.initEnhanced( page.document );
+
+	assert.equal( page.$$( '.wpcmb-multiselect__trigger' ).length, 1 );
 } );

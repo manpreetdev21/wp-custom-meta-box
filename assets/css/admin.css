@@ -545,6 +545,142 @@
 }
 
 /* -------------------------------------------------------------------------
+ * Page headers.
+ *
+ * Core draws the screen title at 23px light with nothing under it, which
+ * suits a settings form and not a surface built out of cards — the title has
+ * to sit on the same grid as the things below it. The lede carries the
+ * sentence that would otherwise be crammed into the heading.
+ * ---------------------------------------------------------------------- */
+
+.wpcmb-admin .wpcmb-wrap > h1 {
+	font-size: 23px;
+	font-weight: 600;
+	letter-spacing: -0.01em;
+	line-height: 1.3;
+	margin: 0;
+	padding: var( --wpcmb-space-2 ) 0 0;
+}
+
+.wpcmb-lede {
+	color: var( --wpcmb-muted );
+	font-size: 14px;
+	line-height: 1.6;
+	margin: var( --wpcmb-space-2 ) 0 0;
+	max-width: 68ch;
+}
+
+/* -------------------------------------------------------------------------
+ * Settings.
+ *
+ * The Settings API owns this markup — it supplies the nonce, the capability
+ * check, the option writes and the saved notice — so the screen is styled
+ * rather than rebuilt: one panel, section headings as quiet rules, and our
+ * own chrome on the handful of controls the page prints. Every selector is
+ * inside our form, so none of it reaches a settings screen we do not own.
+ * ---------------------------------------------------------------------- */
+
+.wpcmb-settings-form {
+	background: var( --wpcmb-surface );
+	border: 1px solid var( --wpcmb-border );
+	border-radius: var( --wpcmb-radius );
+	box-shadow: var( --wpcmb-shadow );
+	margin-top: var( --wpcmb-space-5 );
+	max-width: 900px;
+	padding: var( --wpcmb-space-2 ) var( --wpcmb-space-5 ) var( --wpcmb-space-5 );
+}
+
+.wpcmb-settings-form h2 {
+	border-top: 1px solid var( --wpcmb-border );
+	color: var( --wpcmb-faint );
+	font-size: 11px;
+	font-weight: 600;
+	letter-spacing: 0.05em;
+	margin: var( --wpcmb-space-5 ) 0 0;
+	padding: var( --wpcmb-space-5 ) 0 0;
+	text-transform: uppercase;
+}
+
+/* The first section opens the panel, so it brings no rule with it. */
+.wpcmb-settings-form h2:first-of-type {
+	border-top: 0;
+	margin-top: var( --wpcmb-space-3 );
+	padding-top: 0;
+}
+
+/* A section's own introduction, printed between the heading and its table. */
+.wpcmb-settings-form h2 + p {
+	color: var( --wpcmb-muted );
+	font-size: 13px;
+	line-height: 1.6;
+	margin: var( --wpcmb-space-2 ) 0 0;
+	max-width: 68ch;
+}
+
+.wpcmb-settings-form table {
+	margin: 0;
+}
+
+.wpcmb-settings-form th {
+	font-size: 13px;
+	font-weight: 600;
+	padding-block: var( --wpcmb-space-4 );
+	padding-inline: 0 var( --wpcmb-space-4 );
+	vertical-align: top;
+	width: 200px;
+}
+
+.wpcmb-settings-form td {
+	padding-block: var( --wpcmb-space-4 );
+	padding-inline: 0;
+}
+
+.wpcmb-settings-form td p {
+	color: var( --wpcmb-muted );
+	font-size: 13px;
+	line-height: 1.6;
+	margin: var( --wpcmb-space-2 ) 0 0;
+	max-width: 68ch;
+}
+
+.wpcmb-settings-form input[type="text"],
+.wpcmb-settings-form select,
+.wpcmb-settings-form textarea {
+	/* Colour only: core paints the select chevron with a background image. */
+	background-color: var( --wpcmb-surface );
+	border: 1px solid var( --wpcmb-border-strong );
+	border-radius: var( --wpcmb-radius-sm );
+	box-shadow: none;
+	color: var( --wpcmb-text );
+	line-height: 1.5;
+	min-height: 36px;
+	padding: 6px 10px;
+	transition: border-color var( --wpcmb-fast ) var( --wpcmb-ease );
+}
+
+.wpcmb-settings-form input[type="text"]:hover,
+.wpcmb-settings-form select:hover,
+.wpcmb-settings-form textarea:hover {
+	border-color: var( --wpcmb-accent-line );
+}
+
+.wpcmb-settings-form input[type="text"]:focus,
+.wpcmb-settings-form select:focus,
+.wpcmb-settings-form textarea:focus {
+	border-color: var( --wpcmb-accent );
+}
+
+.wpcmb-settings-form select {
+	/* Room for the chevron core draws in the background. */
+	padding-inline-end: 26px;
+}
+
+.wpcmb-settings-form textarea {
+	line-height: 1.7;
+	padding: 10px 12px;
+}
+
+/* -------------------------------------------------------------------------
  * The core list table at edit.php.
  *
  * The table here is core's, top to bottom: .wp-list-table, .tablenav,

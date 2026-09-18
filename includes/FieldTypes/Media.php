@@ -104,8 +104,8 @@ final class Media extends FieldType {
 
 		printf(
 			'<p class="wpcmb-media__actions">
-				<button type="button" class="button wpcmb-media__select">%s</button>
-				<button type="button" class="button-link-delete wpcmb-media__clear">%s</button>
+				<button type="button" class="wpcmb-btn wpcmb-media__select">%s</button>
+				<button type="button" class="wpcmb-btn wpcmb-btn--quiet wpcmb-btn--danger wpcmb-media__clear">%s</button>
 			</p>
 			</div>',
 			esc_html( $multiple ? __( 'Add media', 'wp-custom-meta-box' ) : __( 'Select media', 'wp-custom-meta-box' ) ),
@@ -124,7 +124,7 @@ final class Media extends FieldType {
 
 		printf(
 			'<li class="wpcmb-media__item" data-wpcmb-id="%s">%s<span class="wpcmb-media__title">%s</span>
-			<button type="button" class="wpcmb-media__remove button-link-delete" aria-label="%s">&times;</button></li>',
+			<button type="button" class="wpcmb-media__remove" aria-label="%s">&times;</button></li>',
 			esc_attr( (string) $id ),
 			wp_kses_post( $thumb ),
 			esc_html( '' !== $title ? $title : (string) $id ),

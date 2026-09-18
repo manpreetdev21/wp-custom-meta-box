@@ -137,7 +137,7 @@ class Repeater extends FieldType {
 
 		printf(
 			'<p class="wpcmb-repeater__actions">
-				<button type="button" class="button wpcmb-repeater__add">%s</button>
+				<button type="button" class="wpcmb-btn wpcmb-repeater__add">%s</button>
 				<span class="wpcmb-repeater__csv"></span>
 			</p></div>',
 			esc_html( (string) $this->setting( $field, 'button_label', __( 'Add row', 'wp-custom-meta-box' ) ) )
@@ -222,18 +222,19 @@ class Repeater extends FieldType {
 	 * @param string $badge     Optional badge shown before the title.
 	 */
 	protected function render_row_header( string $title, bool $collapsed, string $badge = '' ): void {
+		// phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped -- Titles and labels are escaped below; the icons are literal markup.
 		printf(
 			'<div class="wpcmb-repeater__header">
-				<span class="wpcmb-repeater__handle" aria-hidden="true">&#9776;</span>
-				<button type="button" class="wpcmb-repeater__toggle" aria-expanded="%1$s">&#9662;</button>
+				<span class="wpcmb-repeater__handle" aria-hidden="true">%8$s</span>
+				<button type="button" class="wpcmb-repeater__toggle" aria-expanded="%1$s">%9$s</button>
 				%2$s
 				<span class="wpcmb-repeater__title">%3$s</span>
 				<span class="wpcmb-repeater__preview" aria-hidden="true"></span>
 				<span class="wpcmb-repeater__buttons">
-					<button type="button" class="button-link wpcmb-repeater__move" data-wpcmb-delta="-1" aria-label="%4$s">&uarr;</button>
-					<button type="button" class="button-link wpcmb-repeater__move" data-wpcmb-delta="1" aria-label="%5$s">&darr;</button>
-					<button type="button" class="button-link wpcmb-repeater__duplicate" aria-label="%6$s">&#10697;</button>
-					<button type="button" class="button-link-delete wpcmb-repeater__remove" aria-label="%7$s">&times;</button>
+					<button type="button" class="wpcmb-repeater__move" data-wpcmb-delta="-1" aria-label="%4$s">%10$s</button>
+					<button type="button" class="wpcmb-repeater__move" data-wpcmb-delta="1" aria-label="%5$s">%11$s</button>
+					<button type="button" class="wpcmb-repeater__duplicate" aria-label="%6$s">%12$s</button>
+					<button type="button" class="wpcmb-repeater__remove" aria-label="%7$s">%13$s</button>
 				</span>
 			</div>',
 			$collapsed ? 'false' : 'true',
@@ -244,8 +245,54 @@ class Repeater extends FieldType {
 			esc_attr__( 'Move up', 'wp-custom-meta-box' ),
 			esc_attr__( 'Move down', 'wp-custom-meta-box' ),
 			esc_attr__( 'Duplicate row', 'wp-custom-meta-box' ),
-			esc_attr__( 'Remove row', 'wp-custom-meta-box' )
+			esc_attr__( 'Remove row', 'wp-custom-meta-box' ),
+			self::control_icon( 'grip' ),
+			self::control_icon( 'chevron' ),
+			self::control_icon( 'up' ),
+			self::control_icon( 'down' ),
+			self::control_icon( 'duplicate' ),
+			self::control_icon( 'remove' )
 		);
+		// phpcs:enable WordPress.Security.EscapeOutput.OutputNotEscaped
+	}
+
+	/**
+	 * One of the row controls' icons, as inline SVG.
+	 *
+	 * Inline rather than Dashicons: a dashicon is a font glyph, so it arrives
+	 * a frame late, sits on its own baseline and cannot be given a stroke
+	 * weight that matches the rest of the field chrome. These are drawn at a
+	 * single weight on a 16px grid and inherit `currentColor`, so hover and
+	 * disabled states come from the button rather than from a second rule.
+	 *
+	 * The markup is a literal, never user input, so there is nothing here to
+	 * escape.
+	 *
+	 * @param string $name Icon name.
+	 */
+	private static function control_icon( string $name ): string {
+		$shapes = array(
+			'grip'      => '<circle cx="6" cy="4" r="1.15"/><circle cx="6" cy="8" r="1.15"/><circle cx="6" cy="12" r="1.15"/>'
+				. '<circle cx="10" cy="4" r="1.15"/><circle cx="10" cy="8" r="1.15"/><circle cx="10" cy="12" r="1.15"/>',
+			'chevron'   => '<path d="M4.5 6.25 8 9.75l3.5-3.5"/>',
+			'up'        => '<path d="M8 12.5V4M4.5 7.5 8 4l3.5 3.5"/>',
+			'down'      => '<path d="M8 3.5V12M4.5 8.5 8 12l3.5-3.5"/>',
+			'duplicate' => '<rect x="5.75" y="5.75" width="7.75" height="7.75" rx="1.75"/>'
+				. '<path d="M10.25 5.75v-1.5a1.75 1.75 0 0 0-1.75-1.75h-4a1.75 1.75 0 0 0-1.75 1.75v4a1.75 1.75 0 0 0 1.75 1.75h1.5"/>',
+			'remove'    => '<path d="M4.5 4.5 11.5 11.5M11.5 4.5 4.5 11.5"/>',
+		);
+
+		if ( ! isset( $shapes[ $name ] ) ) {
+			return '';
+		}
+
+		// The dots are solid; everything else is a stroked outline.
+		$fill = 'grip' === $name ? 'fill="currentColor" stroke="none"' : 'fill="none"';
+
+		return '<svg class="wpcmb-svg" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false"'
+			. ' ' . $fill . ' stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">'
+			. $shapes[ $name ]
+			. '</svg>';
 	}
 
 	/**

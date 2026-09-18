@@ -173,8 +173,8 @@ final class Enhanced extends FieldType {
 			printf(
 				'<div class="wpcmb-icon">
 					<span class="wpcmb-icon__current" aria-live="polite">%4$s</span>
-					<button type="button" class="button wpcmb-icon__choose" aria-expanded="false" aria-controls="%1$s-picker">%2$s</button>
-					<button type="button" class="button-link wpcmb-icon__clear"%5$s>%3$s</button>
+					<button type="button" class="wpcmb-btn wpcmb-icon__choose" aria-expanded="false" aria-controls="%1$s-picker">%2$s</button>
+					<button type="button" class="wpcmb-btn wpcmb-btn--quiet wpcmb-icon__clear"%5$s>%3$s</button>
 					<div class="wpcmb-icon__picker" id="%1$s-picker" hidden></div>
 				</div>',
 				esc_attr( $input_id ),
@@ -192,7 +192,7 @@ final class Enhanced extends FieldType {
 				'<div class="wpcmb-signature">
 					<canvas class="wpcmb-signature__pad" width="600" height="200" role="img" aria-label="%1$s"></canvas>
 					<p class="wpcmb-signature__actions">
-						<button type="button" class="button wpcmb-signature__clear">%2$s</button>
+						<button type="button" class="wpcmb-btn wpcmb-signature__clear">%2$s</button>
 						<span class="wpcmb-signature__hint">%3$s</span>
 					</p>
 				</div>',
@@ -221,7 +221,7 @@ final class Enhanced extends FieldType {
 					<input type="text" class="wpcmb-input wpcmb-map__address" id="%1$s-address" value="%7$s" autocomplete="street-address" />
 				</p>
 				<p class="wpcmb-map__actions">
-					<button type="button" class="button wpcmb-map__locate" hidden>%8$s</button>
+					<button type="button" class="wpcmb-btn wpcmb-map__locate" hidden>%8$s</button>
 					<a class="wpcmb-map__open" href="#" target="_blank" rel="noopener noreferrer" hidden>%9$s</a>
 				</p>
 			</div>',

@@ -190,6 +190,27 @@ $wpcmb_fixtures['advanced'] = wpcmb_fixture(
 	)
 );
 
+/* A multiple select, which the script turns into a searchable checklist. */
+$wpcmb_fixtures['multiselect'] = wpcmb_fixture(
+	array(
+		'title'  => 'Multiple select',
+		'fields' => array(
+			array(
+				'key'      => 'field_tags00000001',
+				'name'     => 'tags',
+				'label'    => 'Tags',
+				'type'     => 'select',
+				'settings' => array(
+					'multiple' => '1',
+					'choices'  => "red : Red
+green : Green
+blue : Blue",
+				),
+			),
+		),
+	)
+);
+
 /* The boolean and rating controls. */
 $wpcmb_fixtures['switches'] = wpcmb_fixture(
 	array(

@@ -298,7 +298,7 @@
 
 		var exportButton = document.createElement( 'button' );
 		exportButton.type = 'button';
-		exportButton.className = 'button-link';
+		exportButton.className = 'wpcmb-btn wpcmb-btn--quiet';
 		exportButton.textContent = i18n.exportCsv;
 
 		exportButton.addEventListener( 'click', function () {
@@ -336,7 +336,7 @@
 
 		var importButton = document.createElement( 'button' );
 		importButton.type = 'button';
-		importButton.className = 'button-link';
+		importButton.className = 'wpcmb-btn wpcmb-btn--quiet';
 		importButton.textContent = i18n.importCsv;
 		importButton.addEventListener( 'click', function () {
 			file.click();

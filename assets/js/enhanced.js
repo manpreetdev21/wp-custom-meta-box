@@ -642,6 +642,229 @@
 		} );
 	}
 
+	/* --------------------------------------------------------------------
+	 * Multiple select: a searchable checklist with the choices made visible.
+	 *
+	 * A native `select[multiple]` is a scrolling box that gives up its
+	 * selection only to a ctrl-click, and it shows what is chosen only while
+	 * the chosen rows happen to be scrolled into view. This replaces the look
+	 * of it, not the thing itself: the select stays in the form, keeps its
+	 * name and its options, and every change made here is written back to it
+	 * and announced with a `change` event, so validation, conditional logic
+	 * and the save path go on reading the control they always read. If this
+	 * script never runs, the native select is still there and still works.
+	 * ----------------------------------------------------------------- */
+
+	/**
+	 * The chevron used on a multiple select's trigger.
+	 *
+	 * @return {SVGElement} The icon.
+	 */
+	function chevronIcon() {
+		var ns = 'http://www.w3.org/2000/svg';
+		var svg = document.createElementNS( ns, 'svg' );
+		var path = document.createElementNS( ns, 'path' );
+
+		svg.setAttribute( 'class', 'wpcmb-svg' );
+		svg.setAttribute( 'viewBox', '0 0 16 16' );
+		svg.setAttribute( 'width', '16' );
+		svg.setAttribute( 'height', '16' );
+		svg.setAttribute( 'fill', 'none' );
+		svg.setAttribute( 'stroke', 'currentColor' );
+		svg.setAttribute( 'stroke-width', '1.5' );
+		svg.setAttribute( 'stroke-linecap', 'round' );
+		svg.setAttribute( 'stroke-linejoin', 'round' );
+		svg.setAttribute( 'aria-hidden', 'true' );
+		path.setAttribute( 'd', 'M4.5 6.25 8 9.75l3.5-3.5' );
+		svg.appendChild( path );
+
+		return svg;
+	}
+
+	/**
+	 * Wire every multiple select inside a container.
+	 *
+	 * @param {Element} root Container.
+	 */
+	function initMultiSelects( root ) {
+		root.querySelectorAll( 'select.wpcmb-input[multiple]' ).forEach( function ( select ) {
+			if ( select.hasAttribute( 'data-wpcmb-multiselect' ) ) {
+				return;
+			}
+
+			select.setAttribute( 'data-wpcmb-multiselect', '1' );
+
+			var options = Array.prototype.slice.call( select.options );
+			var wrapper = el( 'div', { class: 'wpcmb-multiselect' } );
+			var chips = el( 'div', { class: 'wpcmb-multiselect__chips', hidden: 'hidden' } );
+			var trigger = el( 'button', {
+				type: 'button',
+				class: 'wpcmb-multiselect__trigger',
+				'aria-expanded': 'false',
+			} );
+			var label = el( 'span', { class: 'wpcmb-multiselect__label' } );
+			var panel = el( 'div', { class: 'wpcmb-multiselect__panel', hidden: 'hidden' } );
+			var search = el( 'input', {
+				type: 'search',
+				class: 'wpcmb-input wpcmb-multiselect__search',
+				placeholder: i18n.searchOptions || '',
+				'aria-label': i18n.searchOptions || '',
+			} );
+			var list = el( 'div', { class: 'wpcmb-multiselect__list' } );
+			var empty = el( 'p', {
+				class: 'wpcmb-multiselect__empty',
+				text: i18n.noMatches || '',
+				hidden: 'hidden',
+			} );
+			var rows = [];
+
+			/**
+			 * Redraw the chips and the trigger from the select's own state.
+			 */
+			function render() {
+				var chosen = options.filter( function ( option ) {
+					return option.selected;
+				} );
+
+				chips.textContent = '';
+				chips.hidden = 0 === chosen.length;
+
+				chosen.forEach( function ( option ) {
+					var chip = el( 'span', { class: 'wpcmb-multiselect__chip' }, [
+						el( 'span', { text: option.text } ),
+					] );
+					var remove = el( 'button', {
+						type: 'button',
+						class: 'wpcmb-multiselect__chip-remove',
+						'aria-label': ( i18n.remove || '' ) + ': ' + option.text,
+						text: '×',
+					} );
+
+					remove.addEventListener( 'click', function () {
+						option.selected = false;
+						render();
+						announce();
+					} );
+
+					chip.appendChild( remove );
+					chips.appendChild( chip );
+				} );
+
+				rows.forEach( function ( row ) {
+					row.box.checked = row.option.selected;
+				} );
+
+				label.textContent = 0 === chosen.length
+					? ( i18n.selectOptions || '' )
+					: ( i18n.selectedCount || '' ).replace( '%d', String( chosen.length ) );
+
+				label.classList.toggle( 'is-placeholder', 0 === chosen.length );
+			}
+
+			/**
+			 * Tell the page the selection changed.
+			 *
+			 * Conditional logic and validation listen on the select, and a
+			 * scripted change to `selected` fires nothing on its own.
+			 */
+			function announce() {
+				select.dispatchEvent( new Event( 'input', { bubbles: true } ) );
+				select.dispatchEvent( new Event( 'change', { bubbles: true } ) );
+			}
+
+			/**
+			 * Open or close the panel.
+			 *
+			 * @param {boolean} open Whether to open.
+			 */
+			function toggle( open ) {
+				panel.hidden = ! open;
+				trigger.setAttribute( 'aria-expanded', String( open ) );
+
+				if ( open ) {
+					search.focus();
+				}
+			}
+
+			/**
+			 * Show only the options matching what is typed.
+			 */
+			function filter() {
+				var term = search.value.trim().toLowerCase();
+				var shown = 0;
+
+				rows.forEach( function ( row ) {
+					var match = '' === term || -1 !== row.option.text.toLowerCase().indexOf( term );
+
+					row.node.hidden = ! match;
+					shown += match ? 1 : 0;
+				} );
+
+				empty.hidden = 0 !== shown;
+			}
+
+			options.forEach( function ( option ) {
+				var box = el( 'input', { type: 'checkbox', class: 'wpcmb-multiselect__box' } );
+				var row = el( 'label', { class: 'wpcmb-multiselect__option' }, [
+					box,
+					el( 'span', { text: option.text } ),
+				] );
+
+				box.checked = option.selected;
+				box.addEventListener( 'change', function () {
+					option.selected = box.checked;
+					render();
+					announce();
+				} );
+
+				list.appendChild( row );
+				rows.push( { option: option, box: box, node: row } );
+			} );
+
+			trigger.appendChild( label );
+			trigger.appendChild( chevronIcon() );
+			panel.appendChild( search );
+			panel.appendChild( list );
+			panel.appendChild( empty );
+
+			select.parentNode.insertBefore( wrapper, select );
+			wrapper.appendChild( chips );
+			wrapper.appendChild( trigger );
+			wrapper.appendChild( panel );
+			wrapper.appendChild( select );
+
+			// Still in the form and still submitted, but no longer a second
+			// control to tab through or a second thing to read out.
+			select.classList.add( 'wpcmb-multiselect__native' );
+			select.setAttribute( 'tabindex', '-1' );
+			select.setAttribute( 'aria-hidden', 'true' );
+
+			trigger.addEventListener( 'click', function () {
+				toggle( panel.hidden );
+			} );
+
+			search.addEventListener( 'input', filter );
+
+			// A search input's own clear button fires `search`, not `input`.
+			search.addEventListener( 'search', filter );
+
+			wrapper.addEventListener( 'keydown', function ( event ) {
+				if ( 'Escape' === event.key && ! panel.hidden ) {
+					toggle( false );
+					trigger.focus();
+				}
+			} );
+
+			document.addEventListener( 'click', function ( event ) {
+				if ( ! panel.hidden && ! wrapper.contains( event.target ) ) {
+					toggle( false );
+				}
+			} );
+
+			render();
+		} );
+	}
+
 	/**
 	 * Initialise every advanced control inside a container.
 	 *
@@ -655,6 +878,7 @@
 		initMap( root );
 		initEmbed( root );
 		initCodes( root );
+		initMultiSelects( root );
 	}
 
 	window.wpcmb = window.wpcmb || {};

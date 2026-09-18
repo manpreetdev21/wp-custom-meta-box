@@ -128,17 +128,24 @@ final class MetaBoxes extends Module {
 			array( '__block_editor_compatible_meta_box' => true )
 		);
 
-		if ( 'seamless' === ( $group->settings['style'] ?? 'default' ) ) {
-			add_filter(
-				'postbox_classes_' . $screen . '_wpcmb-' . $group->key,
-				static function ( $classes ): array {
-					$classes   = is_array( $classes ) ? $classes : array();
-					$classes[] = 'wpcmb-seamless';
+		$seamless = 'seamless' === ( $group->settings['style'] ?? 'default' );
 
-					return $classes;
+		// Our own class on our own box, so the stylesheet can give it the same
+		// chrome as the fields inside it without ever matching a core or
+		// third-party meta box.
+		add_filter(
+			'postbox_classes_' . $screen . '_wpcmb-' . $group->key,
+			static function ( $classes ) use ( $seamless ): array {
+				$classes   = is_array( $classes ) ? $classes : array();
+				$classes[] = 'wpcmb-metabox';
+
+				if ( $seamless ) {
+					$classes[] = 'wpcmb-seamless';
 				}
-			);
-		}
+
+				return $classes;
+			}
+		);
 	}
 
 	/**

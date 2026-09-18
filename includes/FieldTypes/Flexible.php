@@ -127,7 +127,7 @@ final class Flexible extends Repeater {
 
 		printf(
 			'<p class="wpcmb-repeater__actions">
-				<button type="button" class="button wpcmb-repeater__add">%s</button>
+				<button type="button" class="wpcmb-btn wpcmb-repeater__add">%s</button>
 				<span class="wpcmb-repeater__csv"></span>
 			</p></div>',
 			esc_html( (string) $this->setting( $field, 'button_label', __( 'Add layout', 'wp-custom-meta-box' ) ) )

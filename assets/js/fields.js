@@ -214,7 +214,7 @@
 
 				var remove = document.createElement( 'button' );
 				remove.type = 'button';
-				remove.className = 'wpcmb-media__remove button-link-delete';
+				remove.className = 'wpcmb-media__remove';
 				remove.textContent = '×';
 				remove.setAttribute( 'aria-label', config.i18n.remove );
 				item.appendChild( remove );
