@@ -255,12 +255,18 @@ final class MetaBoxes extends Module {
 	/**
 	 * Save field values on a term submission.
 	 *
+	 * `edit_term` rather than `manage_categories`: it is a meta capability, so
+	 * WordPress maps it to whichever capabilities the taxonomy was registered
+	 * with. A taxonomy with its own — `manage_product_terms`, say — is then
+	 * honoured, where the category capability would have let anyone holding it
+	 * write term values for a taxonomy they cannot otherwise touch.
+	 *
 	 * @param int    $term_id  Term id.
 	 * @param int    $tt_id    Term taxonomy id.
 	 * @param string $taxonomy Taxonomy name.
 	 */
 	public function save_term( $term_id, $tt_id = 0, $taxonomy = '' ): void {
-		$this->save( new ObjectRef( ObjectRef::TERM, (int) $term_id ), 'manage_categories' );
+		$this->save( new ObjectRef( ObjectRef::TERM, (int) $term_id ), 'edit_term' );
 	}
 
 	/**

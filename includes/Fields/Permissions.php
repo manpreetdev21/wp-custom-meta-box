@@ -67,7 +67,8 @@ final class Permissions {
 
 		$allowed = match ( $ref->type ) {
 			ObjectRef::POST    => current_user_can( 'edit_post', (int) $ref->id ),
-			ObjectRef::TERM    => current_user_can( 'manage_categories' ),
+			// A meta capability, so it resolves to the taxonomy's own.
+			ObjectRef::TERM    => current_user_can( 'edit_term', (int) $ref->id ),
 			ObjectRef::USER    => current_user_can( 'edit_user', (int) $ref->id ),
 			ObjectRef::COMMENT => current_user_can( 'edit_comment', (int) $ref->id ),
 			ObjectRef::OPTION  => current_user_can( 'manage_options' ),

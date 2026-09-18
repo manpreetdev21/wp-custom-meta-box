@@ -104,6 +104,52 @@ $generated = FieldGroup::sanitize( array() );
 assert( 1 === preg_match( '/^group_[a-z0-9]+$/', $generated['key'] ), 'missing group keys must be generated' );
 assert( array() === $generated['fields'] && array() === $generated['location'], 'an empty group sanitizes to empty' );
 
+// A field name can never claim a protected meta key. Names go straight to
+// update_metadata(), and an underscore is how WordPress and every other plugin
+// mark meta as internal — so `_thumbnail_id` would hand everyone who can edit
+// the object a writable path to a key something else owns. Creating the field
+// needs manage_options; filling it in needs only edit_post, and that is the
+// boundary this keeps.
+$protected = FieldGroup::sanitize(
+	array(
+		'fields' => array(
+			array( 'name' => '_thumbnail_id', 'type' => 'text' ),
+			array( 'name' => '__edit_last', 'type' => 'text' ),
+			array( 'name' => '  _wp_page_template  ', 'type' => 'text' ),
+			array( 'name' => '___', 'type' => 'text' ),
+			array(
+				'name'       => 'rows',
+				'type'       => 'repeater',
+				'sub_fields' => array( array( 'name' => '_edit_lock', 'type' => 'text' ) ),
+			),
+		),
+	)
+);
+
+assert(
+	array( 'thumbnail_id', 'edit_last', 'wp_page_template', 'rows' ) === array_column( $protected['fields'], 'name' ),
+	'leading underscores must be stripped from field names, got: ' . implode( ', ', array_column( $protected['fields'], 'name' ) )
+);
+
+// A name of nothing but underscores has nothing left, so the field is dropped
+// rather than stored under an empty key.
+assert( 4 === count( $protected['fields'] ), 'a field whose name is only underscores must be dropped' );
+
+// Sub fields go through the same rule: a repeater row writes its own meta.
+assert(
+	'edit_lock' === $protected['fields'][3]['sub_fields'][0]['name'],
+	'sub field names must be stripped too, got: ' . $protected['fields'][3]['sub_fields'][0]['name']
+);
+
+// The builder names fields in the browser and the server re-sanitizes on save,
+// so the two rules have to agree. If they drift, a field is silently renamed
+// on save and its stored values are orphaned.
+$builder = (string) file_get_contents( dirname( __DIR__ ) . '/assets/js/builder.js' );
+
+assert(
+	str_contains( $builder, ".replace( /^_+/, '' )" ),
+	'builder.js toName() must strip leading underscores, matching sanitize_field_name()'
+);
 // Sanitized output round-trips through the model unchanged.
 $group = FieldGroup::from_array( $clean );
 assert( $group->key === $clean['key'], 'the model preserves the key' );

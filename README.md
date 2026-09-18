@@ -471,6 +471,72 @@ mirror automatically under `dir="rtl"`.
 
 **Colour** comes from `--wp-admin-theme-color`, so the plugin adopts whichever
 admin colour scheme the user picked rather than imposing its own.
+## Security
+
+Authorisation is the part of a plugin that holds until the day somebody adds
+one more handler in a hurry, so `tests/security-check.php` enforces it with the
+rest of the suite:
+
+| Rule | Enforced |
+|---|---|
+| Every AJAX handler checks a nonce **and** a capability | ✅ |
+| No endpoint treats "signed in" as permission | ✅ |
+| Every REST route has a permission callback that is not `__return_true` | ✅ |
+| Term values use the taxonomy-aware capability | ✅ |
+| Every write path verifies a nonce | ✅ |
+| Field names cannot claim protected meta keys | ✅ |
+| Option-page values are written to prefixed option names | ✅ |
+
+The rules are worth reading for *why* they exist, because each is the trace of
+a way this could go wrong:
+
+**Signed in is not permission.** `wp_ajax_` runs for every user on the site,
+subscribers included. A handler that verifies only the nonce is open to the
+whole user table — and the field endpoints render a field's own labels, choices
+and default values. They require `edit_posts`, filterable through
+`wpcmb/ajax/capability` for a site that deliberately puts a repeater on a user
+profile group its subscribers fill in themselves.
+
+**Values inherit the permissions of the object they belong to.** One place,
+`Fields/Permissions.php`, answers that for the edit screens, the front-end
+forms and the REST routes, because a capability check living in three places is
+one that will eventually disagree with itself. Terms use `edit_term` rather
+than `manage_categories`: it is a meta capability, so WordPress maps it to
+whatever capabilities the taxonomy was actually registered with.
+
+**A field name is a meta key.** Names go straight to `update_metadata()`, and a
+leading underscore is how WordPress and every other plugin mark meta as
+internal. A field named `_thumbnail_id` would hand everyone who can edit the
+object a writable path to a key something else owns — creating the field needs
+`manage_options`, but filling it in needs only `edit_post`, and that is the
+boundary being kept. Leading underscores are stripped, in the PHP sanitizer and
+in the builder's JavaScript, which `sanitize-check.php` checks agree.
+
+> **Upgrading from 1.0:** a field whose name began with an underscore is now
+> stored without it (`_price` becomes `price`). Rename such a field before
+> upgrading, or migrate its meta key, or its existing values will read as
+> empty.
+
+**The front-end form trusts nothing it is handed.** The configuration is signed
+with `wp_hash()` and compared with `hash_equals()`, then intersected with the
+known keys, so a signature captured from one form cannot smuggle settings into
+another. A public form never publishes: `draft` and `pending` are the only
+statuses it will use unless the submitter holds `publish_posts`. Uploads are
+off unless the submitter holds `upload_files`, because a public upload endpoint
+is a different security problem from a public form.
+
+**Values are re-checked, not trusted.** Choice and relationship fields
+intersect the submission with the options actually rendered, so a hand-built
+request cannot store a value the form never offered. Media fields verify each
+id really is an attachment. Sanitizers are idempotent, so a value cleaned on
+the edit screen and again in the value pipeline comes out the same.
+
+What the checks cannot do is prove a capability is the *right* one — they prove
+a check is present and that the ones already reasoned about have not quietly
+reverted. Each rule was mutation-tested when it was written: break the thing it
+guards and the suite fails.
+
+
 ## Conditional logic and validation
 
 Both run on the server. The browser copy exists for fast feedback, not to decide what may be stored.
@@ -554,7 +620,7 @@ Deleting the plugin removes nothing unless `wpcmb_delete_data_on_uninstall` is s
 ## Checks
 
 ```bash
-composer test        # all 13 PHP checks, one process each
+composer test        # all 14 PHP checks, one process each
 npm test             # 149 browser tests against the real scripts
 php tests/integration.php   # real WordPress, non-destructive
 composer lint        # WordPress Coding Standards
@@ -582,6 +648,7 @@ php tests/form-check.php        # form config signing, guests, targets
 php tests/rest-check.php        # JSON Schema generation
 php tests/blocks-check.php      # block settings and naming
 php tests/integrations-check.php # integrations stay dormant without their hosts
+php tests/security-check.php     # nonces, capabilities and storage boundaries
 ```
 
 None of these need WordPress.
@@ -646,7 +713,7 @@ wp-custom-meta-box/
 │   ├── Installer.php
 │   └── Plugin.php
 ├── tests/
-│   ├── *-check.php               13 standalone PHP checks
+│   ├── *-check.php               14 standalone PHP checks
 │   ├── integration.php          real WordPress, non-destructive
 │   ├── run.php                  runs every PHP check
 │   ├── shims.php

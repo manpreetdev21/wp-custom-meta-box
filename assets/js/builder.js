@@ -413,7 +413,9 @@
 			.toLowerCase()
 			.replace( /[^a-z0-9_\-\s]/g, '' )
 			.trim()
-			.replace( /[\s\-]+/g, '_' );
+			.replace( /[\s\-]+/g, '_' )
+			// Leading underscores mark protected meta; PHP strips them too.
+			.replace( /^_+/, '' );
 	}
 
 	/**

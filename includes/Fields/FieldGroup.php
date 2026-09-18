@@ -510,10 +510,21 @@ final class FieldGroup {
 	 * The builder's JavaScript applies the same rule; if the two disagree, a
 	 * field is silently renamed on save and its stored values are orphaned.
 	 *
+	 * Leading underscores are stripped. A field name is written straight to
+	 * `update_metadata()`, and an underscore is what WordPress and every
+	 * plugin on the site use to mark meta as protected and internal — so a
+	 * field named `_thumbnail_id` or `_edit_last` would hand everyone who can
+	 * edit that object a writable path to a key that something else owns.
+	 * Whoever creates the field needs `manage_options`, but whoever fills it
+	 * in needs only `edit_post`, and that is the boundary this protects.
+	 *
+	 * A name of nothing but underscores reduces to an empty string, and
+	 * sanitize_fields() drops a field with no name.
+	 *
 	 * @param string $name Untrusted name.
 	 */
 	public static function sanitize_field_name( string $name ): string {
-		return sanitize_key( (string) preg_replace( '/[\s\-]+/', '_', trim( $name ) ) );
+		return ltrim( sanitize_key( (string) preg_replace( '/[\s\-]+/', '_', trim( $name ) ) ), '_' );
 	}
 
 	/**

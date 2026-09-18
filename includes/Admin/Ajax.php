@@ -368,6 +368,30 @@ final class Ajax extends Module {
 	}
 
 	/**
+	 * The capability these endpoints require.
+	 *
+	 * Editing, not merely being signed in. These render a field's own markup
+	 * — its labels, choices and default values — so being able to reach them
+	 * with nothing but a login turns any subscriber into a reader of the
+	 * site's field structure. `edit_posts` is the same bar `block_form()` and
+	 * `embed_preview()` already set.
+	 *
+	 * Filterable because a site can legitimately put a repeater on a user
+	 * profile group that subscribers fill in themselves; such a site lowers
+	 * this deliberately rather than losing the control by default.
+	 */
+	public static function capability(): string {
+		/**
+		 * Filters the capability required to reach the field AJAX endpoints.
+		 *
+		 * @since 1.1.0
+		 *
+		 * @param string $capability Capability name.
+		 */
+		return (string) apply_filters( 'wpcmb/ajax/capability', 'edit_posts' );
+	}
+
+	/**
 	 * Verify the request and resolve the field it names.
 	 *
 	 * Wrapped in an ArrayObject so the caller can tell "resolved" from a
@@ -378,8 +402,8 @@ final class Ajax extends Module {
 	private function verified_field(): ?\ArrayObject {
 		check_ajax_referer( self::NONCE, 'nonce' );
 
-		if ( ! is_user_logged_in() ) {
-			wp_send_json_error( array( 'message' => __( 'You are not signed in.', 'wp-custom-meta-box' ) ), 403 );
+		if ( ! current_user_can( self::capability() ) ) {
+			wp_send_json_error( array( 'message' => __( 'You are not allowed to edit fields.', 'wp-custom-meta-box' ) ), 403 );
 		}
 
 		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- check_ajax_referer() above.
