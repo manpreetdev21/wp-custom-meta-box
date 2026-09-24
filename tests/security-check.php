@@ -178,6 +178,43 @@ foreach ( array( 'includes/Admin/Ajax.php', 'includes/REST/Controller.php', 'inc
 wpcmb_rule( 'no endpoint treats "signed in" as permission', $wpcmb_login_gated );
 
 /*
+ * Rule 2b: an endpoint open to visitors proves its right some other way.
+ *
+ * `wp_ajax_nopriv_` runs for anybody at all, so there is no capability to
+ * check. The one the plugin opens — a blank repeater row for a front-end form
+ * — stands on the form's signed configuration instead: the signature is the
+ * site's own, it names the group, and the field must belong to that group.
+ * Any nopriv handler added without that gate is open to the internet.
+ */
+$wpcmb_open = array();
+
+if ( preg_match_all( '/add_action\(\s*.wp_ajax_nopriv_([a-z_]+).,\s*array\( \$this, .([a-z_]+). \)/', $wpcmb_ajax, $matches, PREG_SET_ORDER ) ) {
+	foreach ( $matches as $match ) {
+		$body = wpcmb_method_body( $wpcmb_ajax, $match[2] );
+
+		// Either the handler itself, or the gate it delegates to, has to be
+		// the thing that reads the signature.
+		$gate = $body . ( str_contains( $body, 'verified_field()' ) ? wpcmb_method_body( $wpcmb_ajax, 'verified_field' ) : '' );
+
+		if ( ! str_contains( $gate, 'form_allows(' ) ) {
+			$wpcmb_open[] = sprintf( 'wp_ajax_nopriv_%s  is open with no signed form to justify it', $match[1] );
+		}
+	}
+}
+
+$wpcmb_form_allows = wpcmb_method_body( $wpcmb_ajax, 'form_allows' );
+
+if ( '' !== $wpcmb_form_allows ) {
+	foreach ( array( 'Form::verify(' => 'verify the signature', 'may_submit(' => 'check the form accepts this visitor', 'field_in_group(' => 'scope the field to the form\'s own group' ) as $needle => $what ) {
+		if ( ! str_contains( $wpcmb_form_allows, $needle ) ) {
+			$wpcmb_open[] = sprintf( 'Ajax::form_allows()  does not %s', $what );
+		}
+	}
+}
+
+wpcmb_rule( 'a visitor-facing endpoint is gated by a signed form', $wpcmb_open );
+
+/*
  * Rule 3: every REST route has a real permission callback.
  *
  * A missing callback is a public route, and `__return_true` is a public route

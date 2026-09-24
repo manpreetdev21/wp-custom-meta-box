@@ -196,6 +196,24 @@ final class Repository {
 	}
 
 	/**
+	 * Find a field by key within one group only.
+	 *
+	 * `field_by_key()` answers "does this field exist anywhere", which is the
+	 * right question for an editor who can already see every group. It is the
+	 * wrong question for a public form: there, the signed configuration names
+	 * one group, and a field outside it is a field the visitor was never
+	 * shown.
+	 *
+	 * @param FieldGroup $group Group to look in.
+	 * @param string     $key   Field key.
+	 *
+	 * @return array<string, mixed>|null
+	 */
+	public function field_in_group( FieldGroup $group, string $key ): ?array {
+		return $this->search( $group->fields, $key );
+	}
+
+	/**
 	 * Depth-first search of a field tree for a key.
 	 *
 	 * @param array<int, mixed> $fields Field definitions.

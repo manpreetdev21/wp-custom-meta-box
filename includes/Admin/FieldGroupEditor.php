@@ -333,13 +333,29 @@ final class FieldGroupEditor extends Module {
 
 		echo '</fieldset>';
 
+		/*
+		 * Two snippets, because there is no one honest snippet. A form takes
+		 * submissions from signed-in visitors only unless it is told
+		 * otherwise, and the earlier wording here promised "a public form"
+		 * while handing over the shortcode that refuses one — so the first
+		 * thing anybody saw after pasting it was "You need to sign in".
+		 */
+		$key = $this->group( $post )->key;
+
 		printf(
-			'<p><label class="wpcmb-label" for="wpcmb-shortcode">%s</label>
-			<input class="widefat code" type="text" id="wpcmb-shortcode" value="%s" readonly onfocus="this.select()" />
-			<span class="description">%s</span></p>',
-			esc_html__( 'Front-end form', 'wp-custom-meta-box' ),
-			esc_attr( wpcmb_form_shortcode( $this->group( $post )->key ) ),
-			esc_html__( 'Paste into any post or page to render this group as a public form.', 'wp-custom-meta-box' )
+			'<p><label class="wpcmb-label" for="wpcmb-shortcode">%1$s</label>
+			<input class="widefat code" type="text" id="wpcmb-shortcode" value="%2$s" readonly onfocus="this.select()" />
+			<span class="description">%3$s</span></p>
+
+			<p><label class="wpcmb-label" for="wpcmb-shortcode-guests">%4$s</label>
+			<input class="widefat code" type="text" id="wpcmb-shortcode-guests" value="%5$s" readonly onfocus="this.select()" />
+			<span class="description">%6$s</span></p>',
+			esc_html__( 'Front-end form — signed-in visitors', 'wp-custom-meta-box' ),
+			esc_attr( wpcmb_form_shortcode( $key ) ),
+			esc_html__( 'Paste into any post or page. Visitors who are not signed in are asked to sign in.', 'wp-custom-meta-box' ),
+			esc_html__( 'Front-end form — anyone', 'wp-custom-meta-box' ),
+			esc_attr( wpcmb_form_shortcode( $key, array( 'guests' => '1' ) ) ),
+			esc_html__( 'Accepts submissions from anyone, signed in or not. Uploads still need an account.', 'wp-custom-meta-box' )
 		);
 	}
 

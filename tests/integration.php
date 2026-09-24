@@ -575,6 +575,153 @@ wpcmb_group(
 );
 
 /* -------------------------------------------------------------------------
+ * Every location rule parameter, against a real object.
+ *
+ * A rule that resolves to null on the object it describes can never match
+ * anything, and nothing says so: the group simply never appears, which reads
+ * as "the plugin does not work" rather than as a bug in one rule. `comment`
+ * was exactly that — it read the post type of the referenced object, which is
+ * only set when the reference is a post, so it matched post screens and never
+ * comment screens.
+ *
+ * So each parameter is checked three ways: it resolves on its own object, a
+ * rule naming that value matches, and a rule naming something else does not.
+ * ---------------------------------------------------------------------- */
+
+wpcmb_group(
+	'every location rule parameter matches its own object',
+	static function (): void {
+		$post = wpcmb_post_fixture( 'post', 'Location rules probe' );
+		$root = wpcmb_post_fixture( 'page', 'Location rules parent' );
+
+		$page = wp_insert_post(
+			array(
+				'post_type'   => 'page',
+				'post_status' => 'publish',
+				'post_title'  => 'Location rules child',
+				'post_parent' => $root,
+			)
+		);
+
+		$GLOBALS['wpcmb_created'][] = array( 'type' => 'post', 'id' => (int) $page );
+
+		update_post_meta( $page, '_wp_page_template', 'itest-template.php' );
+
+		$attachment = wpcmb_post_fixture( 'attachment', 'Location rules file' );
+
+		set_post_format( $post, 'aside' );
+
+		$term = wp_insert_term( 'Location rules term', 'category' );
+		$term_id = is_wp_error( $term ) ? 0 : (int) $term['term_id'];
+
+		wp_set_post_terms( $post, array( $term_id ), 'category' );
+
+		$comment = wp_insert_comment(
+			array( 'comment_post_ID' => $post, 'comment_content' => 'probe', 'comment_approved' => 1 )
+		);
+
+		$menu = wp_create_nav_menu( 'Location rules menu' );
+		$menu_id = is_wp_error( $menu ) ? 0 : (int) $menu;
+
+		$item = 0 === $menu_id ? 0 : wp_update_nav_menu_item(
+			$menu_id,
+			0,
+			array(
+				'menu-item-title'  => 'Probe item',
+				'menu-item-status' => 'publish',
+				'menu-item-type'   => 'custom',
+				'menu-item-url'    => '/',
+			)
+		);
+
+		$ref = static fn( string $type, $id ) => new WPCMB\Fields\ObjectRef( $type, $id );
+		$ctx = static fn( WPCMB\Fields\ObjectRef $object, array $extra = array() ) => new WPCMB\Fields\Context( $object, $extra );
+
+		$post_ref = $ref( WPCMB\Fields\ObjectRef::POST, (int) $post );
+		$page_ref = $ref( WPCMB\Fields\ObjectRef::POST, (int) $page );
+
+		$cases = array(
+			'post_type'         => array( $ctx( $post_ref ), 'post' ),
+			'post_status'       => array( $ctx( $post_ref ), 'publish' ),
+			'post_format'       => array( $ctx( $post_ref ), 'aside' ),
+			'post_category'     => array( $ctx( $post_ref ), 'location-rules-term' ),
+			'post_taxonomy'     => array( $ctx( $post_ref ), 'category' ),
+			'post'              => array( $ctx( $post_ref ), (string) $post ),
+			'post_template'     => array( $ctx( $page_ref ), 'itest-template.php' ),
+			'page_template'     => array( $ctx( $page_ref ), 'itest-template.php' ),
+			'page_type'         => array( $ctx( $page_ref ), 'child' ),
+			'page_parent'       => array( $ctx( $page_ref ), (string) $root ),
+			'page'              => array( $ctx( $page_ref ), (string) $page ),
+			'attachment'        => array( $ctx( $ref( WPCMB\Fields\ObjectRef::POST, (int) $attachment ) ), 'all' ),
+			'comment'           => array( $ctx( $ref( WPCMB\Fields\ObjectRef::COMMENT, (int) $comment ) ), 'post' ),
+			'taxonomy'          => array( $ctx( $ref( WPCMB\Fields\ObjectRef::TERM, $term_id ) ), 'category' ),
+			'user_role'         => array( $ctx( $ref( WPCMB\Fields\ObjectRef::USER, 1 ) ), 'administrator' ),
+			'user_form'         => array( $ctx( $ref( WPCMB\Fields\ObjectRef::USER, 1 ), array( 'user_form' => 'edit' ) ), 'edit' ),
+			'options_page'      => array( $ctx( $ref( WPCMB\Fields\ObjectRef::OPTION, 'itest-options-rule' ) ), 'itest-options-rule' ),
+			'widget'            => array( $ctx( $post_ref, array( 'widget' => 'text' ) ), 'text' ),
+			'block'             => array( $ctx( $post_ref, array( 'block' => 'itest/block' ) ), 'itest/block' ),
+			'current_user'      => array( $ctx( $post_ref ), 'logged_in' ),
+			'current_user_role' => array( $ctx( $post_ref ), 'administrator' ),
+		);
+
+		if ( 0 !== $item ) {
+			$cases['nav_menu_item'] = array( $ctx( $ref( WPCMB\Fields\ObjectRef::POST, (int) $item ) ), 'all' );
+		}
+
+		if ( 0 !== $menu_id ) {
+			$cases['nav_menu'] = array( $ctx( $ref( WPCMB\Fields\ObjectRef::TERM, $menu_id ) ), (string) $menu_id );
+		}
+
+		foreach ( $cases as $param => $case ) {
+			list( $context, $expected ) = $case;
+
+			$matches = WPCMB\Fields\Locations::match(
+				array( array( array( 'param' => $param, 'operator' => '==', 'value' => $expected ) ) ),
+				$context
+			);
+
+			$anything = WPCMB\Fields\Locations::match(
+				array( array( array( 'param' => $param, 'operator' => '==', 'value' => 'itest-not-this-value' ) ) ),
+				$context
+			);
+
+			wpcmb_is( $matches, sprintf( '%s matches its own object', $param ) );
+			wpcmb_is( ! $anything, sprintf( '%s does not match anything else', $param ) );
+		}
+
+		// The two halves of the comment bug, named rather than left implied.
+		$comment_rule = array( array( array( 'param' => 'comment', 'operator' => '==', 'value' => 'post' ) ) );
+
+		wpcmb_is(
+			! WPCMB\Fields\Locations::match( $comment_rule, $ctx( $post_ref ) ),
+			'a comment rule does not follow the fields onto a post screen'
+		);
+
+		wpcmb_is(
+			! WPCMB\Fields\Locations::match(
+				array( array( array( 'param' => 'post_type', 'operator' => '==', 'value' => 'post' ) ) ),
+				$ctx( $ref( WPCMB\Fields\ObjectRef::COMMENT, (int) $comment ) )
+			),
+			'and a post type rule does not follow them onto a comment screen'
+		);
+
+		wp_delete_comment( (int) $comment, true );
+
+		if ( 0 !== $term_id ) {
+			wp_delete_term( $term_id, 'category' );
+		}
+
+		if ( 0 !== $item ) {
+			wp_delete_post( (int) $item, true );
+		}
+
+		if ( 0 !== $menu_id ) {
+			wp_delete_nav_menu( $menu_id );
+		}
+	}
+);
+
+/* -------------------------------------------------------------------------
  * Clean up everything this run created.
  * ---------------------------------------------------------------------- */
 

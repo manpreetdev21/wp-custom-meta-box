@@ -95,7 +95,8 @@ final class Context {
 		}
 
 		$value = match ( $param ) {
-			'post_type', 'comment'                => $this->post_value( 'post_type' ),
+			'post_type'                           => $this->post_value( 'post_type' ),
+			'comment'                             => $this->comment_post_type(),
 			'post_status'                         => $this->post_value( 'post_status' ),
 			'post_format'                         => $this->post_format(),
 			'post_template', 'page_template'      => $this->template(),
@@ -132,6 +133,31 @@ final class Context {
 		$post = $this->post();
 
 		return $post instanceof \WP_Post ? (string) $post->{$property} : null;
+	}
+
+	/**
+	 * The post type a comment belongs to.
+	 *
+	 * The `comment` rule offers post types, so "Comment is post" means the
+	 * comments on posts of that type. It used to read the post type of the
+	 * *referenced* object, which is only ever set when the reference is a
+	 * post — so the rule matched post edit screens, where it was never meant
+	 * to apply, and never matched a comment screen, where it was.
+	 */
+	private function comment_post_type(): ?string {
+		if ( ObjectRef::COMMENT !== $this->ref->type ) {
+			return null;
+		}
+
+		$comment = get_comment( (int) $this->ref->id );
+
+		if ( ! $comment instanceof \WP_Comment ) {
+			return null;
+		}
+
+		$post = get_post( (int) $comment->comment_post_ID );
+
+		return $post instanceof \WP_Post ? (string) $post->post_type : null;
 	}
 
 	/**

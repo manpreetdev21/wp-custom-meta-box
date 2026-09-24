@@ -18,6 +18,7 @@ use WPCMB\Fields\Repository;
 use WPCMB\Fields\Resolver;
 use WPCMB\Fields\Validator;
 use WPCMB\Fields\Values;
+use WPCMB\PostTypes\SubmissionPostType;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -259,32 +260,90 @@ final class Submission extends Module {
 			return $ref;
 		}
 
-		$post_type = post_type_exists( (string) $config['post_type'] ) ? (string) $config['post_type'] : 'post';
-
-		// A public form never publishes. `draft` is the default and anything
-		// beyond `pending` is refused, so a mis-set shortcode cannot put
-		// unreviewed content on the site.
-		$status = in_array( $config['post_status'], array( 'draft', 'pending' ), true )
-			? (string) $config['post_status']
-			: 'draft';
-
-		if ( 'publish' === $config['post_status'] && current_user_can( 'publish_posts' ) ) {
-			$status = 'publish';
-		}
+		/*
+		 * The configured type is used even when nothing has registered it yet.
+		 * A submission post type is registered once it holds something, and
+		 * the first submission is what puts something in it — `post_type` is
+		 * a string in a row, so the insert does not need the registration.
+		 * The value is signed, so it is one the site wrote, never one a
+		 * visitor chose.
+		 */
+		$configured = sanitize_key( (string) $config['post_type'] );
+		$post_type  = '' !== $configured ? $configured : 'post';
 
 		$post_id = wp_insert_post(
 			array(
 				'post_type'   => $post_type,
-				'post_status' => $status,
+				'post_status' => $this->status_for( $config, $post_type ),
 				'post_title'  => '' !== $title ? $title : __( 'Untitled submission', 'wp-custom-meta-box' ),
 				'post_author' => get_current_user_id(),
 			),
 			true
 		);
 
-		return is_wp_error( $post_id )
-			? new ObjectRef( ObjectRef::POST, 0 )
-			: new ObjectRef( ObjectRef::POST, (int) $post_id );
+		if ( is_wp_error( $post_id ) ) {
+			return new ObjectRef( ObjectRef::POST, 0 );
+		}
+
+		$this->record_origin( (int) $post_id, $post_type, (string) $config['group'] );
+
+		return new ObjectRef( ObjectRef::POST, (int) $post_id );
+	}
+
+	/**
+	 * The status a submission is created with.
+	 *
+	 * A public form never publishes to the site: `draft` is the default and
+	 * anything beyond `pending` is refused, so a mis-set shortcode cannot put
+	 * unreviewed content in front of visitors.
+	 *
+	 * A post type nobody can view is not the site, though. Submissions are
+	 * records in the admin, and leaving them as drafts labels every one of
+	 * them "Draft" in a list where the word means nothing.
+	 *
+	 * @param array<string, mixed> $config    Verified configuration.
+	 * @param string               $post_type Post type being created.
+	 */
+	private function status_for( array $config, string $post_type ): string {
+		$wanted = (string) $config['post_status'];
+
+		if ( in_array( $wanted, array( 'draft', 'pending' ), true ) ) {
+			return $wanted;
+		}
+
+		if ( 'publish' !== $wanted ) {
+			return 'draft';
+		}
+
+		return current_user_can( 'publish_posts' ) || ! is_post_type_viewable( $post_type )
+			? 'publish'
+			: 'draft';
+	}
+
+	/**
+	 * Record where a submission came from, and that its type is now in use.
+	 *
+	 * Without the group, a stored submission is a row of meta with no way to
+	 * know which fields it belongs to, which is what the admin screen reads to
+	 * display it. Without the source, a submission that arrives from one of
+	 * several pages cannot be traced to any of them.
+	 *
+	 * @param int    $post_id   New submission.
+	 * @param string $post_type Its post type.
+	 * @param string $group_key Field group key.
+	 */
+	private function record_origin( int $post_id, string $post_type, string $group_key ): void {
+		update_post_meta( $post_id, SubmissionPostType::META_GROUP, $group_key );
+
+		$source = wp_get_referer();
+
+		if ( is_string( $source ) && '' !== $source ) {
+			update_post_meta( $post_id, SubmissionPostType::META_SOURCE, esc_url_raw( $source ) );
+		}
+
+		if ( SubmissionPostType::owns( $post_type ) ) {
+			SubmissionPostType::remember( $post_type, $group_key );
+		}
 	}
 
 	/**

@@ -21,6 +21,7 @@ use WPCMB\Fields\Renderer;
 use WPCMB\Fields\Repository;
 use WPCMB\Fields\Resolver;
 use WPCMB\Fields\Validator;
+use WPCMB\Frontend\Form;
 use WPCMB\PostTypes\FieldGroupPostType;
 use WPCMB\FieldTypes\Flexible;
 use WPCMB\FieldTypes\Repeater;
@@ -54,6 +55,7 @@ final class Ajax extends Module {
 	 */
 	public function boot(): void {
 		add_action( 'wp_ajax_wpcmb_repeater_row', array( $this, 'repeater_row' ) );
+		add_action( 'wp_ajax_nopriv_wpcmb_repeater_row', array( $this, 'repeater_row' ) );
 		add_action( 'wp_ajax_wpcmb_repeater_csv_export', array( $this, 'csv_export' ) );
 		add_action( 'wp_ajax_wpcmb_repeater_csv_import', array( $this, 'csv_import' ) );
 		add_action( 'wp_ajax_wpcmb_block_form', array( $this, 'block_form' ) );
@@ -476,12 +478,18 @@ final class Ajax extends Module {
 	private function verified_field(): ?\ArrayObject {
 		check_ajax_referer( self::NONCE, 'nonce' );
 
-		if ( ! current_user_can( self::capability() ) ) {
-			wp_send_json_error( array( 'message' => __( 'You are not allowed to edit fields.', 'wp-custom-meta-box' ) ), 403 );
-		}
-
 		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- check_ajax_referer() above.
 		$key = isset( $_POST['field_key'] ) ? sanitize_key( wp_unslash( $_POST['field_key'] ) ) : '';
+
+		/*
+		 * An editor may ask about any field. A visitor on a front-end form may
+		 * ask about the fields of that form and nothing else — a repeater on a
+		 * public form is unusable otherwise, because its rows are rendered by
+		 * the server and there is nobody with `edit_posts` to render them.
+		 */
+		if ( ! current_user_can( self::capability() ) && ! $this->form_allows( $key ) ) {
+			wp_send_json_error( array( 'message' => __( 'You are not allowed to edit fields.', 'wp-custom-meta-box' ) ), 403 );
+		}
 
 		$field = $this->container->get( Repository::class )->field_by_key( $key );
 
@@ -490,6 +498,51 @@ final class Ajax extends Module {
 		}
 
 		return new \ArrayObject( $field );
+	}
+
+	/**
+	 * Whether a signed front-end form entitles this request to a field.
+	 *
+	 * The form's configuration travels with it, signed with the site's own
+	 * salts, so it cannot be edited by whoever is holding it. That signature
+	 * is what stands in for a capability here, and it is only worth anything
+	 * alongside three further checks: the form must actually accept this
+	 * visitor, the field must belong to the group the form names, and the
+	 * group must be one that is published.
+	 *
+	 * What a visitor can obtain this way is the blank markup of a field on a
+	 * form the site chose to publish — which is already on the page they are
+	 * looking at.
+	 *
+	 * @param string $key Field key being requested.
+	 */
+	private function form_allows( string $key ): bool {
+		if ( '' === $key ) {
+			return false;
+		}
+
+		// phpcs:disable WordPress.Security.NonceVerification.Missing -- check_ajax_referer() ran in verified_field(); the signature below is the authorisation.
+		$state = isset( $_POST[ Form::STATE ] ) && is_array( $_POST[ Form::STATE ] )
+			? wp_unslash( $_POST[ Form::STATE ] ) // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Verified by signature, not by shape.
+			: array();
+		// phpcs:enable WordPress.Security.NonceVerification.Missing
+
+		$config = Form::verify(
+			is_scalar( $state['payload'] ?? null ) ? (string) $state['payload'] : '',
+			is_scalar( $state['signature'] ?? null ) ? (string) $state['signature'] : ''
+		);
+
+		if ( null === $config || ! Form::may_submit( $config ) ) {
+			return false;
+		}
+
+		$group = $this->container->get( Repository::class )->get( (string) $config['group'] );
+
+		if ( ! $group instanceof FieldGroup ) {
+			return false;
+		}
+
+		return null !== $this->container->get( Repository::class )->field_in_group( $group, $key );
 	}
 
 	/**

@@ -136,4 +136,91 @@ function wpcmb_test_shortcode( string $group_key, array $args = array() ): strin
 	return '[' . implode( ' ', $parts ) . ']';
 }
 
+/* -------------------------------------------------------------------------
+ * The default configuration has to be one that works.
+ *
+ * A shortcode pasted with nothing but a group key used to render a form and
+ * then fail on submit: `action` was `values`, which needs something to store
+ * against, while `object` was `new`, which is not an object. Every visitor's
+ * first submission answered "That could not be saved. Please try again."
+ * ---------------------------------------------------------------------- */
+
+$wpcmb_defaults = Form::defaults();
+
+assert( 'post' === $wpcmb_defaults['action'], 'a bare form creates a post, which is the only thing it can do unasked' );
+assert( 'new' === $wpcmb_defaults['object'], 'and it creates a new one' );
+assert( '0' === $wpcmb_defaults['guests'], 'and it stays signed-in only until told otherwise' );
+
+/*
+ * An empty post type means "this group's own submissions type". It cannot be
+ * named in the defaults, which do not know which group they are for, so
+ * render() fills it in before signing — and an empty one reaching the
+ * submission handler would silently become a plain post.
+ */
+assert( '' === $wpcmb_defaults['post_type'], 'the post type is derived from the group, not defaulted here' );
+
+/*
+ * `publish` is requested, and Submission::status_for() honours it only for a
+ * post type nobody can view. Submissions are records in the admin, so leaving
+ * them as drafts labels every one of them "Draft" in a list where the word
+ * means nothing — while a form pointed at real content still cannot publish
+ * it. The integration checks hold that second half against real post types.
+ */
+assert( 'publish' === $wpcmb_defaults['post_status'], 'a submission is a record, not a draft' );
+
+// The pairing that cannot work must be recognisable, so the renderer can say
+// so instead of letting somebody find out by filling the form in.
+$wpcmb_dead_end = static fn( array $config ): bool =>
+	'values' === ( $config['action'] ?? '' ) && 'new' === ( $config['object'] ?? '' );
+
+assert( ! $wpcmb_dead_end( $wpcmb_defaults ), 'the defaults are not the dead end' );
+assert( $wpcmb_dead_end( array( 'action' => 'values', 'object' => 'new' ) ), 'storing values against nothing is the dead end' );
+assert( ! $wpcmb_dead_end( array( 'action' => 'values', 'object' => 'post_12' ) ), 'storing values against a post is fine' );
+
+/* -------------------------------------------------------------------------
+ * A signed form entitles a visitor to its own fields, and no others.
+ *
+ * Repeater rows are rendered by the server, so a repeater on a public form is
+ * unusable unless a visitor can ask for one. The signature is what stands in
+ * for a capability there, which makes the scope of what it unlocks the thing
+ * worth pinning down.
+ * ---------------------------------------------------------------------- */
+
+$wpcmb_group = WPCMB\Fields\FieldGroup::from_array(
+	WPCMB\Fields\FieldGroup::sanitize(
+		array(
+			'key'    => 'group_scoped00001',
+			'title'  => 'Scoped',
+			'fields' => array(
+				array(
+					'key'        => 'field_rows00000001',
+					'name'       => 'rows',
+					'type'       => 'repeater',
+					'sub_fields' => array(
+						array( 'key' => 'field_deep00000001', 'name' => 'deep', 'type' => 'text' ),
+					),
+				),
+			),
+		)
+	)
+);
+
+$wpcmb_repo = new WPCMB\Fields\Repository();
+
+assert(
+	null !== $wpcmb_repo->field_in_group( $wpcmb_group, 'field_rows00000001' ),
+	'a field of the group is found'
+);
+
+assert(
+	null !== $wpcmb_repo->field_in_group( $wpcmb_group, 'field_deep00000001' ),
+	'so is a sub field, however deep'
+);
+
+assert(
+	null === $wpcmb_repo->field_in_group( $wpcmb_group, 'field_elsewhere01' ),
+	'a field the group does not contain is not found, whatever the signature says'
+);
+
+
 echo "form-check: OK\n";

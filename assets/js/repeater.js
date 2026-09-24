@@ -181,6 +181,25 @@
 			body.append( 'layout', layout );
 		}
 
+		/*
+		 * On a front-end form the caller is a visitor, not an editor, so the
+		 * server has no capability to check. The form's signed configuration
+		 * travels with the request instead: it names the group, it cannot be
+		 * edited by whoever holds it, and the server will only render fields
+		 * belonging to that group.
+		 */
+		var form = repeater.closest( 'form.wpcmb-form' );
+
+		if ( form ) {
+			[ 'payload', 'signature' ].forEach( function ( part ) {
+				var input = form.querySelector( '[name="wpcmb_form[' + part + ']"]' );
+
+				if ( input ) {
+					body.append( 'wpcmb_form[' + part + ']', input.value );
+				}
+			} );
+		}
+
 		window.fetch( config.ajaxUrl, { method: 'POST', body: body, credentials: 'same-origin' } )
 			.then( function ( response ) {
 				return response.json();
@@ -292,7 +311,7 @@
 	function initCsv( repeater ) {
 		var slot = repeater.querySelector( ':scope > .wpcmb-repeater__actions > .wpcmb-repeater__csv' );
 
-		if ( ! slot || 'true' !== repeater.dataset.wpcmbCsv ) {
+		if ( ! slot || 'true' !== repeater.dataset.wpcmbCsv || false === config.csv ) {
 			return;
 		}
 

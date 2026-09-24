@@ -49,6 +49,67 @@
 	}
 
 	/**
+	 * One of the row controls' icons, as inline SVG.
+	 *
+	 * Glyphs — a hamburger, a multiplication sign, whatever `⧉` is —
+	 * each arrive at their own size, weight and baseline, so a row of
+	 * them never lines up and none of them can be given a hover state
+	 * that matches the rest. These are drawn on one 16px grid at one
+	 * stroke weight and inherit `currentColor`, which is what makes
+	 * hover, danger and disabled one rule each instead of one per icon.
+	 *
+	 * @param {string} name Icon name.
+	 * @return {SVGElement} The icon.
+	 */
+	function svgIcon( name ) {
+		var shapes = {
+			grip: [ 'M6 4h.01M6 8h.01M6 12h.01M10 4h.01M10 8h.01M10 12h.01' ],
+			chevron: [ 'M4.5 6.25 8 9.75l3.5-3.5' ],
+			duplicate: [
+				'M10.25 5.75v-1.5a1.75 1.75 0 0 0-1.75-1.75h-4a1.75 1.75 0 0 0-1.75 1.75v4a1.75 1.75 0 0 0 1.75 1.75h1.5',
+			],
+			remove: [ 'M4.5 4.5 11.5 11.5', 'M11.5 4.5 4.5 11.5' ],
+		};
+
+		var ns = 'http://www.w3.org/2000/svg';
+		var svg = document.createElementNS( ns, 'svg' );
+
+		svg.setAttribute( 'class', 'wpcmb-svg' );
+		svg.setAttribute( 'viewBox', '0 0 16 16' );
+		svg.setAttribute( 'width', '16' );
+		svg.setAttribute( 'height', '16' );
+		svg.setAttribute( 'fill', 'none' );
+		svg.setAttribute( 'stroke', 'currentColor' );
+		svg.setAttribute( 'stroke-width', 'grip' === name ? '2' : '1.5' );
+		svg.setAttribute( 'stroke-linecap', 'round' );
+		svg.setAttribute( 'stroke-linejoin', 'round' );
+		svg.setAttribute( 'aria-hidden', 'true' );
+
+		( shapes[ name ] || [] ).forEach( function ( d ) {
+			var path = document.createElementNS( ns, 'path' );
+
+			path.setAttribute( 'd', d );
+			svg.appendChild( path );
+		} );
+
+		// The duplicate icon is two shapes: a square, and the corner of the
+		// one behind it. A rect is clearer here than a path pretending to be
+		// one.
+		if ( 'duplicate' === name ) {
+			var rect = document.createElementNS( ns, 'rect' );
+
+			rect.setAttribute( 'x', '5.75' );
+			rect.setAttribute( 'y', '5.75' );
+			rect.setAttribute( 'width', '7.75' );
+			rect.setAttribute( 'height', '7.75' );
+			rect.setAttribute( 'rx', '1.75' );
+			svg.appendChild( rect );
+		}
+
+		return svg;
+	}
+
+	/**
 	 * Build a select from a flat map or a map of optgroups.
 	 *
 	 * @param {Object} options  Values keyed by value, or groups of those.
@@ -881,24 +942,27 @@
 			class: 'wpcmb-field-row__toggle',
 			'aria-expanded': 'true',
 			'aria-label': i18n.collapseField,
-			text: '▾',
 		} );
+
+		toggle.appendChild( svgIcon( 'chevron' ) );
 
 		var duplicate = el( 'button', {
 			type: 'button',
 			class: 'wpcmb-field-row__duplicate',
 			'aria-label': i18n.duplicateField,
 			title: i18n.duplicateField,
-			text: '⧉',
 		} );
+
+		duplicate.appendChild( svgIcon( 'duplicate' ) );
 
 		var remove = el( 'button', {
 			type: 'button',
 			class: 'wpcmb-field-row__remove',
 			'aria-label': i18n.deleteField,
 			title: i18n.deleteField,
-			text: '×',
 		} );
+
+		remove.appendChild( svgIcon( 'remove' ) );
 
 		var icon = el( 'span', {
 			class: 'wpcmb-field-row__icon dashicons ' + ( ( config.fieldIcons || {} )[ field.type ] || 'dashicons-edit' ),
@@ -919,7 +983,7 @@
 
 		var row = el( 'div', { class: 'wpcmb-field-row', dataset: { wpcmbIndex: index } }, [
 			el( 'div', { class: 'wpcmb-field-row__header' }, [
-				el( 'span', { class: 'wpcmb-field-row__handle', title: i18n.reorder, text: '☰' } ),
+				el( 'span', { class: 'wpcmb-field-row__handle', title: i18n.reorder }, [ svgIcon( 'grip' ) ] ),
 				icon,
 				title,
 				required,
@@ -1423,6 +1487,8 @@
 	LocationBuilder.prototype.constructor = LocationBuilder;
 
 	LocationBuilder.prototype.render = function () {
+		this.adoptShownValues();
+
 		Builder.prototype.render.call( this );
 
 		// A group with no rules never appears anywhere, which is the single
@@ -1518,6 +1584,43 @@
 		);
 
 		return option ? option.textContent : value;
+	};
+
+	/**
+	 * Make every rule's stored value the one its control will show.
+	 *
+	 * A value control with a fixed set of choices is a select, and a select
+	 * always shows something: given a value that is not one of its options
+	 * — a rule just added, or one whose parameter has just changed — the
+	 * browser shows the first option while the stored value stays empty.
+	 * The screen then reads "Post Type is Posts" while the group saves as
+	 * "post type is nothing", matches nothing, and appears nowhere.
+	 *
+	 * Run before the state is written rather than while the controls are
+	 * drawn, because the write is what the form posts.
+	 */
+	LocationBuilder.prototype.adoptShownValues = function () {
+		this.items.forEach( function ( rules ) {
+			( rules || [] ).forEach( function ( rule ) {
+				if ( ! rule || ( config.locationObjects || {} )[ rule.param ] ) {
+					return;
+				}
+
+				var choices = ( config.locationChoices || {} )[ rule.param ];
+
+				if ( ! choices ) {
+					return;
+				}
+
+				var keys = Object.keys( choices );
+
+				// A parameter with no choices at all takes free text, where an
+				// empty value means the author has not typed one yet.
+				if ( keys.length && -1 === keys.indexOf( String( rule.value ) ) ) {
+					rule.value = keys[ 0 ];
+				}
+			} );
+		} );
 	};
 
 	LocationBuilder.prototype.blankRule = function () {

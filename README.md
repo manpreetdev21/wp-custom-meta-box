@@ -2,7 +2,7 @@
 
 Field groups, meta boxes and a developer-friendly field API for WordPress.
 
-- **Version:** 1.3.0
+- **Version:** 1.4.0
 - **Author:** Manpreet Singh
 - **Requires PHP:** 8.1
 - **Requires WordPress:** 6.8
@@ -149,6 +149,35 @@ Rules are an OR list of AND groups: the group shows when every rule in at least 
 - **An inapplicable parameter never matches, negated or not.** Otherwise "post type is not page" would start matching users, terms and comments.
 
 `Context` computes parameter values on demand and memoises them. A typical rule set tests one or two parameters, and several of the others cost a term or template query — building a full description of the screen up front would run those queries to answer questions nobody asked.
+
+### Two rules that could never match
+
+**A rule saved with no value.** A value control with a fixed set of choices is
+a `<select>`, and a select always shows something: given a value that is not
+one of its options — a rule just added, or one whose parameter has just
+changed — the browser showed the first option while the stored value stayed
+empty. The screen read *Post Type is Posts*, the summary agreed, and the group
+saved as `post_type == ""`, matched nothing and appeared on no screen at all.
+
+The values are now reconciled before the state is written, which is the part
+that matters: doing it while the controls are drawn corrects the screen and
+leaves the saved value behind, because the state is synced to the form before
+the controls are built.
+
+A group saved before this repairs itself the next time its editor is opened
+and saved.
+
+**`comment` matched the wrong screen and never the right one.** The rule
+offers post types, so "Comment is post" means the comments on posts of that
+type — but it read the post type of the *referenced* object, which is only
+set when the reference is a post. So it matched post edit screens, where it
+was never meant to apply, and never matched a comment screen, where it was.
+
+Both are covered by `tests/integration.php`, which now walks every location
+rule parameter against a real object of its own kind and checks three things
+for each: that it resolves, that a rule naming that value matches, and that a
+rule naming something else does not.
+
 
 ## Field types
 
@@ -312,7 +341,104 @@ wpcmb_form( array( 'group' => 'group_contact0001', 'action' => 'post' ) );
 wpcmb_form_shortcode( 'group_contact0001' );   // the shortcode string
 ```
 
-The editor's Display Settings box shows each group's shortcode, ready to copy.
+The editor's Display Settings box shows both shortcodes, ready to copy.
+
+### What a bare shortcode does
+
+```
+[wpcmb_form group="group_abc123"]
+```
+
+That creates a **draft post** carrying the submitted values, from a
+**signed-in** visitor. Both halves of that used to be wrong:
+
+- `action` defaulted to `values`, which needs an object to store against,
+  while `object` defaulted to `new`, which is not an object. The pair
+  described a form with nowhere to put anything: it rendered correctly and
+  then answered *"That could not be saved. Please try again."* on submit, for
+  everyone including administrators. `action` now defaults to `post`, which is
+  the only thing a form can do without being told what it is editing. The
+  combination that still cannot work says so when the form renders, rather
+  than when somebody fills it in.
+- The editor offered that snippet under the words *"render this group as a
+  public form"*, but a form takes submissions from signed-in visitors only
+  unless told otherwise — so the first thing a visitor saw was *"You need to
+  sign in to use this form."* The editor now shows two snippets and says which
+  is which.
+
+For a form anybody may submit:
+
+```
+[wpcmb_form group="group_abc123" guests="1"]
+```
+
+`guests` stays off by default on purpose. A group key is not a secret, and
+turning every pasted shortcode into an anonymous write endpoint is not a
+default anyone should inherit. Uploads need an account regardless — see
+`wpcmb/form/allow_uploads`.
+
+### Where submissions go
+
+Each group used as a form gets its own post type for its submissions, named
+from the plugin's prefix and the group's own name:
+
+```
+Group "Contact"  →  wpcmb_contact_1f4a  →  Meta Boxes → Contact
+```
+
+One type per group rather than one for all of them: submissions to a contact
+form and to a job application have different fields, different columns and
+different people reading them, and a shared type mixes them into one list that
+suits neither. The four characters are the start of the group's key — a post
+type may be twenty characters and no more, so the name is cut to fit and the
+fragment keeps "Contact" and "Contact Us" apart. The readable name is in the
+labels, which is what anybody sees.
+
+A type is registered once it holds something. Nothing needs registering for a
+submission to be *stored* — a post type is only a string in a row — so a group
+that has never been submitted adds no menu entry, and the first submission
+makes one appear.
+
+Each submission records the group it came from and the page it was submitted
+from, and the edit screen shows the values read-only, labelled by the group's
+fields. Read-only on purpose: the group's location rules point at wherever its
+form is, not at this screen, so editable controls would offer a save that no
+rule would honour.
+
+| | |
+|---|---|
+| Status | `publish`. The type is not viewable, so nothing is exposed — and leaving records as drafts labels every one of them "Draft" in a list where the word means nothing. A form pointed at real content still cannot publish it. |
+| Author | Whoever was signed in, or nobody. The list shows *A visitor* for an anonymous submission. |
+| Add New | Denied. Submissions arrive from forms; an Add New button offers an empty record with no form behind it. |
+
+Override it per form with `post_type="something_else"`, or globally with
+`wpcmb/submissions/post_type_args`.
+
+
+### Repeaters on a public form
+
+Repeater rows are rendered by the server, not cloned in the browser, because a
+cloned `wp_editor()` is a dead editor. That means adding a row is a request,
+and on the front end the caller is a visitor with no editing capability — so
+the Add row button did nothing at all out there, and `repeater.js` was not
+even loaded.
+
+Both are fixed, and the request is authorised by the form's own signed
+configuration rather than by a capability:
+
+| The request carries | Result |
+|---|---|
+| A valid signature, for a field of that group | The blank row |
+| Nothing | 403 |
+| A tampered signature | 403 |
+| A valid signature, but a field from another group | 403 |
+
+What a visitor can obtain this way is the blank markup of a field on a form
+the site chose to publish, which is already in the page they are looking at.
+CSV import and export stay behind the editing capability, so those two buttons
+are not drawn on a public form at all rather than being drawn and answering
+403.
+
 
 Fields are drawn by the **same renderer the admin uses**, so a field type behaves identically on both sides and nothing is implemented twice. The form is a real `<form>` with a real action: with JavaScript blocked it posts, redirects and reports its result normally. The script only adds submitting without a reload and showing errors in place.
 
@@ -798,6 +924,7 @@ wp-custom-meta-box/
 │   │   ├── Menu.php              menu + overview screen
 │   │   ├── MetaBoxes.php         fields on post/term/user/comment/media
 │   │   ├── OptionsPages.php      screens built from options_page rules
+│   │   ├── Submissions.php       reading what a form stored
 │   │   ├── SettingsPage.php
 │   │   └── ToolsPage.php         JSON import/export, PHP export
 │   ├── FieldTypes/               11 classes, 52 types
@@ -827,7 +954,9 @@ wp-custom-meta-box/
 │   │   ├── Controller.php        field-group + options-page routes
 │   │   ├── MetaRegistrar.php     values on core's own endpoints
 │   │   └── Schema.php            field definition → JSON Schema
-│   ├── PostTypes/FieldGroupPostType.php
+│   ├── PostTypes/
+│   │   ├── FieldGroupPostType.php
+│   │   └── SubmissionPostType.php   one per group, named from its name
 │   ├── Container.php
 │   ├── Installer.php
 │   └── Plugin.php

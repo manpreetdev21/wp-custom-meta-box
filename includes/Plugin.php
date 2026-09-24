@@ -171,6 +171,7 @@ final class Plugin {
 	private function module_classes(): array {
 		return array(
 			PostTypes\FieldGroupPostType::class,
+			PostTypes\SubmissionPostType::class,
 			Fields\Registry::class,
 			Fields\Renderer::class,
 			Database\Revisions::class,
@@ -181,6 +182,7 @@ final class Plugin {
 			Admin\MetaBoxes::class,
 			Admin\Ajax::class,
 			Admin\OptionsPages::class,
+			Admin\Submissions::class,
 			Admin\SettingsPage::class,
 			Admin\ToolsPage::class,
 			Admin\DashboardWidget::class,

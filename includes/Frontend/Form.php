@@ -10,12 +10,14 @@ declare( strict_types=1 );
 namespace WPCMB\Frontend;
 
 use WPCMB\Abstracts\Module;
+use WPCMB\Admin\Ajax;
 use WPCMB\Admin\Assets;
 use WPCMB\Fields\FieldGroup;
 use WPCMB\Fields\ObjectRef;
 use WPCMB\Fields\Permissions;
 use WPCMB\Fields\Renderer;
 use WPCMB\Fields\Repository;
+use WPCMB\PostTypes\SubmissionPostType;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -91,15 +93,36 @@ final class Form extends Module {
 			// Which field group to render.
 			'group'        => '',
 
-			// What the submission does: store values against an object,
-			// create or update a post, or update the current user.
-			'action'       => 'values',
+			/*
+			 * What the submission does: store values against an object,
+			 * create or update a post, or update the current user.
+			 *
+			 * `post` rather than `values`, because `values` needs an object to
+			 * store against and the default `object` is `new` — together they
+			 * described a form with nowhere to put anything, so a shortcode
+			 * pasted with nothing but a group key rendered fine and then
+			 * failed on submit with "That could not be saved". Creating a
+			 * draft is the only thing a form can do without being told what
+			 * it is editing.
+			 */
+			'action'       => 'post',
 
-			// For `post`: the type to create, and the status to create it
-			// with. Draft by default — a public form must never publish
-			// unreviewed content because someone forgot to set this.
-			'post_type'    => 'post',
-			'post_status'  => 'draft',
+			/*
+			 * For `post`: the type to create, and the status to create it
+			 * with.
+			 *
+			 * An empty type means "this group's own submissions type", which
+			 * cannot be named here because it is derived from the group and
+			 * this list does not know which group it is for. render() fills it
+			 * in before signing, so the submission handler receives a real
+			 * name and the author can still override it with `post_type=""`.
+			 *
+			 * `publish` is honoured only for a post type nobody can view,
+			 * which submissions are. A form pointed at real content still
+			 * cannot publish it: see Submission::status_for().
+			 */
+			'post_type'    => '',
+			'post_status'  => 'publish',
 			'post_title'   => '1',
 
 			// The object being edited. `new` creates one.
@@ -133,10 +156,26 @@ final class Form extends Module {
 			return $this->notice( __( 'You need to sign in to use this form.', 'wp-custom-meta-box' ) );
 		}
 
+		// Storing values needs something to store them against, and `new` is
+		// not an object. Said here, at render time, because the alternative is
+		// a form that looks right until the first person fills it in.
+		if ( 'values' === $config['action'] && 'new' === $config['object'] ) {
+			return $this->notice(
+				__( 'This form has nowhere to store what it collects. Use action="post" to create a post, or object="post_12" to edit something that already exists.', 'wp-custom-meta-box' )
+			);
+		}
+
 		$ref = $this->object_ref( $config );
 
 		if ( 'new' !== $config['object'] && ! $this->may_edit( $config, $ref ) ) {
 			return $this->notice( __( 'You do not have permission to edit this.', 'wp-custom-meta-box' ) );
+		}
+
+		// Derived here, where the group is known, and signed with the rest of
+		// the configuration so the submission handler cannot be pointed at
+		// some other post type by whoever is holding the form.
+		if ( 'post' === $config['action'] && '' === (string) $config['post_type'] ) {
+			$config['post_type'] = SubmissionPostType::post_type_for( $group );
 		}
 
 		++$this->rendered;
@@ -198,6 +237,7 @@ final class Form extends Module {
 		wp_enqueue_script( 'wpcmb-form', WPCMB_URL . 'assets/js/form.js', array( 'wpcmb-fields' ), Assets::version( 'assets/js/form.js' ), true );
 		wp_enqueue_script( Assets::CODES_HANDLE, WPCMB_URL . 'assets/js/codes.js', array(), Assets::version( 'assets/js/codes.js' ), true );
 		wp_enqueue_script( Assets::ENHANCED_HANDLE, WPCMB_URL . 'assets/js/enhanced.js', array( 'wpcmb-fields', Assets::CODES_HANDLE ), Assets::version( 'assets/js/enhanced.js' ), true );
+		wp_enqueue_script( Assets::REPEATER_HANDLE, WPCMB_URL . 'assets/js/repeater.js', array( 'wpcmb-fields' ), Assets::version( 'assets/js/repeater.js' ), true );
 
 		wp_localize_script(
 			'wpcmb-fields',
@@ -211,6 +251,36 @@ final class Form extends Module {
 					'selectMedia'        => __( 'Select media', 'wp-custom-meta-box' ),
 					'qrTooLong'          => __( 'That is too long to fit in a QR code.', 'wp-custom-meta-box' ),
 					'barcodeUnsupported' => __( 'A barcode can only hold plain ASCII characters.', 'wp-custom-meta-box' ),
+
+					// The multiple select draws itself from these, so a form
+					// with one reads as an unlabelled box without them.
+					'searchOptions'      => __( 'Search options', 'wp-custom-meta-box' ),
+					'selectOptions'      => __( 'Select options', 'wp-custom-meta-box' ),
+					/* translators: %d: number of options chosen. */
+					'selectedCount'      => __( '%d selected', 'wp-custom-meta-box' ),
+					'noMatches'          => __( 'No matches. Try a different search.', 'wp-custom-meta-box' ),
+				),
+			)
+		);
+
+		wp_localize_script(
+			Assets::REPEATER_HANDLE,
+			'wpcmbRepeater',
+			array(
+				'ajaxUrl' => admin_url( 'admin-ajax.php' ),
+				'nonce'   => wp_create_nonce( Ajax::NONCE ),
+
+				/*
+				 * No CSV out here. Importing and exporting rows in bulk is an
+				 * editor's tool, and its endpoints require the editing
+				 * capability — offering the buttons to a visitor would be
+				 * offering two buttons that answer 403.
+				 */
+				'csv'     => false,
+				'i18n'    => array(
+					/* translators: %d: row number. Kept as a literal token so the script can substitute it. */
+					'row'       => __( 'Row %d', 'wp-custom-meta-box' ),
+					'rowFailed' => __( 'That row could not be added. Please try again.', 'wp-custom-meta-box' ),
 				),
 			)
 		);
