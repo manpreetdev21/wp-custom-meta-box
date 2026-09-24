@@ -180,6 +180,7 @@ final class Plugin {
 			Admin\FieldGroupEditor::class,
 			Admin\MetaBoxes::class,
 			Admin\Ajax::class,
+			Admin\OptionsPages::class,
 			Admin\SettingsPage::class,
 			Admin\ToolsPage::class,
 			Admin\DashboardWidget::class,

@@ -681,6 +681,46 @@
 }
 
 /* -------------------------------------------------------------------------
+ * Options pages.
+ *
+ * The fields inside carry their own styling from fields.css, so there is
+ * nothing to do here but space the panels and the save button. Each group
+ * gets a card, which is the same surface the rest of the plugin's screens
+ * are built from.
+ * ---------------------------------------------------------------------- */
+
+/* The plugin's name, above the title, so it is clear what made this screen. */
+.wpcmb-options-eyebrow {
+	display: block;
+	margin-bottom: var( --wpcmb-space-1 );
+}
+
+/*
+ * The slug, beside the title. It is the thing a developer needs — the object
+ * these values are stored against — so it is shown in the same monospace chip
+ * a field key gets rather than folded into the heading text.
+ */
+.wpcmb-options-slug {
+	background: var( --wpcmb-wash );
+	border-radius: var( --wpcmb-radius-chip );
+	color: var( --wpcmb-muted );
+	font-family: ui-monospace, "SFMono-Regular", "Cascadia Mono", Consolas, monospace;
+	font-size: 12px;
+	font-weight: 400;
+	padding: 2px 8px;
+	vertical-align: middle;
+}
+
+.wpcmb-options-group {
+	margin-top: var( --wpcmb-space-5 );
+	max-width: 900px;
+}
+
+.wpcmb-options-actions {
+	margin: var( --wpcmb-space-5 ) 0 0;
+	max-width: 900px;
+}
+/* -------------------------------------------------------------------------
  * The core list table at edit.php.
  *
  * The table here is core's, top to bottom: .wp-list-table, .tablenav,

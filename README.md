@@ -2,7 +2,7 @@
 
 Field groups, meta boxes and a developer-friendly field API for WordPress.
 
-- **Version:** 1.2.0
+- **Version:** 1.3.0
 - **Author:** Manpreet Singh
 - **Requires PHP:** 8.1
 - **Requires WordPress:** 6.8
@@ -234,6 +234,71 @@ Layouts carry an **icon**, a **category** (both used to group the picker) and an
 - On save, the row is **dropped rather than coerced** into another layout. Re-interpreting it would scramble its values into fields that were never meant to hold them.
 
 The layout picker is a keyboard-reachable menu grouped by category, closing on Escape and on outside click. Collapsed rows show a live preview — the first non-empty text value — because a column of rows all saying "Row 3" is unnavigable.
+
+## Options pages
+
+Set a group's location to **Options Page is `site-settings`** and the screen
+appears by itself. No `add_menu_page`, no render callback, nothing in the
+theme:
+
+```
+Location: Options Page is site-settings
+  ↓
+Admin menu → Site Settings (site-settings)     ← created, rendered and saved
+```
+
+The rule is the only place the page is configured, so there is no second list
+to keep in step: delete the rule and the page goes with it. Two groups naming
+the same slug share one screen, each as its own panel.
+
+**Where it appears.** A top-level menu entry directly below Settings, labelled
+with the group's title and the slug underneath it — a site can have several of
+these, built from whatever somebody typed into a rule, and "Site Options"
+alone says neither which plugin made it nor which slug it stores against. The
+page title carries the plugin's name for the same reason.
+
+**Reading the values** needs no new API. An options page is an object like any
+other, addressed by `options_` plus the slug:
+
+```php
+wpcmb_get_field( 'company_name', 'options_site-settings' );
+wpcmb_get_fields( 'options_site-settings' );
+```
+
+Values are stored as options named `wpcmb_{slug}_{field}`, autoloaded off, so a
+field called `siteurl` cannot collide with anything of WordPress's. They are
+also available over REST at `/wpcmb/v1/values/option/{slug}`, behind
+`manage_options`.
+
+**Everything else the plugin does still applies**, because the page renders
+through the same renderer as a meta box: conditional logic, repeaters,
+flexible content, validation and the save gate all work here without knowing
+this screen exists. A required field on an options page blocks the save the
+same way it blocks a publish.
+
+Two filters, for sites that want something different:
+
+```php
+// Move one page under Settings, or anywhere else.
+add_filter( 'wpcmb/options_page/args', function ( $args, $slug ) {
+	if ( 'site-settings' === $slug ) {
+		$args['parent'] = 'options-general.php';
+	}
+
+	return $args;
+}, 10, 2 );
+
+// Create a page no rule points at, and let the plugin render and save it.
+add_filter( 'wpcmb/options_pages', function ( $pages ) {
+	$pages['imported'] = array( 'title' => 'Imported Settings', 'order' => 0 );
+
+	return $pages;
+} );
+```
+
+`wpcmb/options_page/saved` fires after each save, with the slug, the submitted
+values and any validation errors.
+
 
 ## Front-end forms
 
@@ -732,6 +797,7 @@ wp-custom-meta-box/
 │   │   ├── FieldGroupList.php    columns, duplicate, cache invalidation
 │   │   ├── Menu.php              menu + overview screen
 │   │   ├── MetaBoxes.php         fields on post/term/user/comment/media
+│   │   ├── OptionsPages.php      screens built from options_page rules
 │   │   ├── SettingsPage.php
 │   │   └── ToolsPage.php         JSON import/export, PHP export
 │   ├── FieldTypes/               11 classes, 52 types

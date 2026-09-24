@@ -423,6 +423,15 @@ final class Assets extends Module {
 		$id = static fn( string $key ): int => isset( $_GET[ $key ] ) ? absint( wp_unslash( $_GET[ $key ] ) ) : 0;
 		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 
+		// An options page is one of ours and holds fields, which no other
+		// plugin screen does. Without this the field styles and the save gate
+		// never load there, and it renders bare controls nothing validates.
+		$options = OptionsPages::current_slug();
+
+		if ( '' !== $options ) {
+			return new ObjectRef( ObjectRef::OPTION, $options );
+		}
+
 		return match ( $screen->base ) {
 			'post'      => new ObjectRef( ObjectRef::POST, $id( 'post' ) ),
 			'term'      => new ObjectRef( ObjectRef::TERM, $id( 'tag_ID' ) ),
@@ -463,6 +472,10 @@ final class Assets extends Module {
 	 * @param string $hook Current admin page hook, empty when unavailable.
 	 */
 	private function is_plugin_screen( string $hook ): bool {
+		if ( '' !== OptionsPages::current_slug() ) {
+			return true;
+		}
+
 		$screen = get_current_screen();
 
 		// `admin_body_class` passes no hook, and a submenu screen id is the

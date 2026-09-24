@@ -481,6 +481,100 @@ wpcmb_group(
 );
 
 /* -------------------------------------------------------------------------
+ * Options pages.
+ *
+ * The screen is discovered from the location rules, so what matters is that
+ * the discovery agrees with the rules, that the menu entry really appears,
+ * and that values land on the object the page is named after. Those are all
+ * WordPress-side facts, which is why they are checked here.
+ * ---------------------------------------------------------------------- */
+
+wpcmb_group(
+	'options pages are created from the rules that name them',
+	static function (): void {
+		wpcmb_group_fixture(
+			array(
+				'title'    => 'Integration Options',
+				'fields'   => array(
+					array( 'name' => 'itest_company', 'label' => 'Company', 'type' => 'text' ),
+					array( 'name' => 'itest_flag', 'label' => 'Flag', 'type' => 'true_false' ),
+				),
+				'location' => array( array( array( 'param' => 'options_page', 'operator' => '==', 'value' => 'itest-options' ) ) ),
+			)
+		);
+
+		// A rule saying where a group is *not* describes no page to build.
+		wpcmb_group_fixture(
+			array(
+				'title'    => 'Integration Options Excluded',
+				'fields'   => array( array( 'name' => 'itest_nowhere', 'label' => 'Nowhere', 'type' => 'text' ) ),
+				'location' => array( array( array( 'param' => 'options_page', 'operator' => '!=', 'value' => 'itest-absent' ) ) ),
+			)
+		);
+
+		// A group belonging to a post type must not follow the fields onto an
+		// options screen, which is the leak worth checking for.
+		wpcmb_group_fixture(
+			array(
+				'title'    => 'Integration Options Foreign',
+				'fields'   => array( array( 'name' => 'itest_foreign', 'label' => 'Foreign', 'type' => 'text' ) ),
+				'location' => array( array( array( 'param' => 'post_type', 'operator' => '==', 'value' => 'page' ) ) ),
+			)
+		);
+
+		$module = wpcmb()->container()->get( WPCMB\Admin\OptionsPages::class );
+		$pages  = $module->pages();
+
+		wpcmb_is( isset( $pages['itest-options'] ), 'the page named by the rule is discovered' );
+		wpcmb_is( 'Integration Options' === ( $pages['itest-options']['title'] ?? '' ), 'it takes the group title' );
+		wpcmb_is( ! isset( $pages['itest-absent'] ), 'a "is not" rule creates nothing' );
+
+		// The menu entry itself, because a page nobody can reach is no page.
+		$module->register();
+
+		wpcmb_is(
+			isset( $GLOBALS['admin_page_hooks']['wpcmb-options-itest-options'] ),
+			'the admin menu entry is registered'
+		);
+
+		$titles = wp_list_pluck( $GLOBALS['menu'] ?? array(), 0 );
+		$label  = '';
+
+		foreach ( $titles as $title ) {
+			if ( is_string( $title ) && str_contains( $title, 'Integration Options' ) ) {
+				$label = $title;
+			}
+		}
+
+		wpcmb_is( str_contains( $label, 'itest-options' ), 'the menu label carries the slug, got: ' . $label );
+
+		// Values belong to the page, under the plugin's own option names, and
+		// come back through the same reference a theme would use.
+		$ref = new WPCMB\Fields\ObjectRef( WPCMB\Fields\ObjectRef::OPTION, 'itest-options' );
+
+		wpcmb()->container()->get( WPCMB\Fields\Values::class )->update( 'itest_company', '  Spaced Ltd  ', $ref );
+
+		wpcmb_is( 'Spaced Ltd' === get_option( 'wpcmb_itest-options_itest_company' ), 'the value is stored as a prefixed option' );
+		wpcmb_is( 'Spaced Ltd' === wpcmb_get_field( 'itest_company', 'options_itest-options' ), 'and reads back through the template function' );
+
+		delete_option( 'wpcmb_itest-options_itest_company' );
+
+		// The page resolves the same fields the renderer will draw, which is
+		// what makes "no custom code in the theme" true.
+		$fields = wpcmb()->container()->get( WPCMB\Fields\Resolver::class )->fields(
+			new WPCMB\Fields\Context( $ref )
+		);
+
+		wpcmb_is( isset( $fields['itest_company'], $fields['itest_flag'] ), 'the page resolves its own fields' );
+		wpcmb_is( ! isset( $fields['itest_foreign'] ), 'a post type group does not leak onto it' );
+
+		// "Is not some other options page" is true here, so that group does
+		// belong on this screen. It is the same rule the meta boxes follow.
+		wpcmb_is( isset( $fields['itest_nowhere'] ), 'an "is not" rule still matches a different page' );
+	}
+);
+
+/* -------------------------------------------------------------------------
  * Clean up everything this run created.
  * ---------------------------------------------------------------------- */
 
