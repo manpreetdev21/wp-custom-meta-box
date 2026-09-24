@@ -2,7 +2,7 @@
 
 Field groups, meta boxes and a developer-friendly field API for WordPress.
 
-- **Version:** 1.1.0
+- **Version:** 1.2.0
 - **Author:** Manpreet Singh
 - **Requires PHP:** 8.1
 - **Requires WordPress:** 6.8
@@ -546,6 +546,58 @@ Both run on the server. The browser copy exists for fast feedback, not to decide
 - **`>` and `<` are numeric.** PHP's string comparison would make "greater than 10" true for `"9"`.
 - **A malformed validation pattern is reported, not silently passed.** Silently passing is the failure mode that makes a broken rule look like it works.
 
+### Required fields actually stop a save
+
+A required field that does not stop a save is worse than no required flag at
+all: the screen promises something it does not do. Both editors used to let a
+post be published with every required field empty — the classic form posted
+whatever it had, and the block editor saves the post through the REST API and
+submits the meta boxes *afterwards*, so by the time the plugin saw the values
+the post was already live.
+
+Three things close it, at the three points where each is sound:
+
+| Where | What happens |
+|---|---|
+| Block editor | The save is locked while the post is heading for a public status, so Publish and Update go quiet. A draft still saves. |
+| Classic forms — post, term, user, comment | The submit is held, the server is asked, and it is replayed only if the answer is clean. |
+| Server, on every one of our form submissions | A post may not *enter* `publish`, `future` or `private` while a required field is empty. It stays as it was and the reason is reported. |
+
+**Nothing is validated twice.** The browser has no copy of the rules: it asks
+`wp_ajax_wpcmb_validate_values`, which runs the real `Validator` over the real
+resolved fields. Conditional logic, per-type formats, lengths, ranges,
+patterns and the `wpcmb/validate` filters are all decided in one place, so a
+rule added in PHP is enforced by the gate the moment it exists.
+
+**Required works inside repeaters, groups and flexible layouts too.** Before
+1.2.0 the sub fields of a composite field were sanitized but never validated,
+so marking a repeater column required had no effect at all. Messages name the
+row: *Row 2: Member is required.*
+
+Deliberate limits, each for a reason:
+
+- **A draft is never refused.** Saving work in progress must always be
+  possible; refusing it would mean a half-written page could not be kept at
+  all. `pending` is not blocked either, because submitting unfinished work for
+  review is exactly when a required field is expected to be empty.
+- **An already-published post is never unpublished.** An edit that happens to
+  leave a required field empty reports the problem; it does not take a live
+  page off the site. The gate stops the Update before it happens.
+- **A save that is not ours is not judged.** The guard runs only on requests
+  carrying our nonce, so programmatic inserts and other plugins' saves pass
+  through untouched.
+- **A direct REST publish is not covered.** `POST /wp/v2/pages/123` with
+  `status: publish` from an API client carries no field values, and refusing it
+  on the strength of what happens to be stored would block the block editor's
+  own first publish — the values arrive in the meta box request a moment
+  later. Publishing through the editor is guarded; publishing through the API
+  is the API's business.
+- **Failing open is deliberate.** If the validation request itself fails, the
+  gate lets the save through and says so in the console. A network blip must
+  not lock somebody out of their own work, and the server checks again on the
+  way in regardless.
+
+
 Custom rules hook `wpcmb/validate`, `wpcmb/validate/type={$type}` or `wpcmb/validate/name={$name}`; return a non-empty string to reject.
 
 ### Revisions and autosave
@@ -620,8 +672,8 @@ Deleting the plugin removes nothing unless `wpcmb_delete_data_on_uninstall` is s
 ## Checks
 
 ```bash
-composer test        # all 14 PHP checks, one process each
-npm test             # 149 browser tests against the real scripts
+composer test        # all 15 PHP checks, one process each
+npm test             # 156 browser tests against the real scripts
 php tests/integration.php   # real WordPress, non-destructive
 composer lint        # WordPress Coding Standards
 ```
@@ -649,6 +701,7 @@ php tests/rest-check.php        # JSON Schema generation
 php tests/blocks-check.php      # block settings and naming
 php tests/integrations-check.php # integrations stay dormant without their hosts
 php tests/security-check.php     # nonces, capabilities and storage boundaries
+php tests/validation-check.php   # required fields, including inside repeaters
 ```
 
 None of these need WordPress.
@@ -713,11 +766,11 @@ wp-custom-meta-box/
 │   ├── Installer.php
 │   └── Plugin.php
 ├── tests/
-│   ├── *-check.php               14 standalone PHP checks
+│   ├── *-check.php               15 standalone PHP checks
 │   ├── integration.php          real WordPress, non-destructive
 │   ├── run.php                  runs every PHP check
 │   ├── shims.php
-│   └── js/                      149 browser tests + generated fixtures
+│   └── js/                      156 browser tests + generated fixtures
 ├── vendor/
 ├── composer.json
 ├── phpcs.xml.dist

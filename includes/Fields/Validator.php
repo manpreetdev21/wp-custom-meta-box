@@ -95,6 +95,7 @@ final class Validator {
 			$this->check_length( $settings, $field, $value ),
 			$this->check_range( $settings, $field, $value ),
 			$this->check_pattern( $settings, $field, $value ),
+			$this->check_sub_fields( $field, $value ),
 		);
 
 		foreach ( $checks as $error ) {
@@ -237,6 +238,132 @@ final class Validator {
 		}
 
 		return 1 === $result ? '' : $this->message( $settings, __( 'This value is not in the expected format.', 'wp-custom-meta-box' ) );
+	}
+
+	/**
+	 * Validate the sub fields inside a composite value.
+	 *
+	 * A repeater, a flexible-content row and a group all store their sub
+	 * values as arrays, and a required sub field is as required as a top-level
+	 * one — without this, marking a repeater's "Name" column required would
+	 * have no effect at all.
+	 *
+	 * Rows are numbered from 1 in the message, because that is how the row
+	 * headers are numbered on screen. First failure wins, as everywhere else
+	 * here: a repeater with twenty empty rows should report one problem, not
+	 * twenty of the same one.
+	 *
+	 * @param array<string, mixed> $field Field definition.
+	 * @param mixed                $value Submitted value.
+	 */
+	private function check_sub_fields( array $field, mixed $value ): string {
+		if ( ! is_array( $value ) ) {
+			return '';
+		}
+
+		$type = (string) ( $field['type'] ?? '' );
+
+		// A group is one row, stored flat rather than as a list of rows.
+		if ( 'group' === $type ) {
+			return $this->check_row( $this->sub_fields_of( $field ), $value, 0 );
+		}
+
+		$rows = array_values( $value );
+
+		foreach ( $rows as $index => $row ) {
+			if ( ! is_array( $row ) ) {
+				continue;
+			}
+
+			$sub_fields = 'flexible_content' === $type
+				? $this->layout_sub_fields( $field, (string) ( $row['_layout'] ?? '' ) )
+				: $this->sub_fields_of( $field );
+
+			$error = $this->check_row( $sub_fields, $row, $index + 1 );
+
+			if ( '' !== $error ) {
+				return $error;
+			}
+		}
+
+		return '';
+	}
+
+	/**
+	 * Validate one row of sub values.
+	 *
+	 * @param array<int, array<string, mixed>> $sub_fields Sub field definitions.
+	 * @param array<string, mixed>             $row        Submitted row.
+	 * @param int                              $number     Row number, 0 for a group.
+	 */
+	private function check_row( array $sub_fields, array $row, int $number ): string {
+		$lookup = static function ( string $key ) use ( $sub_fields, $row ) {
+			foreach ( $sub_fields as $sub ) {
+				if ( ( $sub['key'] ?? '' ) === $key ) {
+					return $row[ (string) ( $sub['name'] ?? '' ) ] ?? null;
+				}
+			}
+
+			return null;
+		};
+
+		foreach ( $sub_fields as $sub ) {
+			if ( ! is_array( $sub ) || '' === (string) ( $sub['name'] ?? '' ) ) {
+				continue;
+			}
+
+			// The same rule the top level follows: a sub field hidden by
+			// conditional logic was never shown, so it cannot block a save.
+			if ( ! Conditional::is_visible( $sub, $lookup ) ) {
+				continue;
+			}
+
+			$error = $this->validate_field( $sub, $row[ (string) $sub['name'] ] ?? null );
+
+			if ( '' === $error ) {
+				continue;
+			}
+
+			return 0 === $number
+				? $error
+				/* translators: 1: row number, 2: the problem with that row. */
+				: sprintf( __( 'Row %1$d: %2$s', 'wp-custom-meta-box' ), $number, $error );
+		}
+
+		return '';
+	}
+
+	/**
+	 * A composite field's own sub fields.
+	 *
+	 * @param array<string, mixed> $field Field definition.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function sub_fields_of( array $field ): array {
+		return is_array( $field['sub_fields'] ?? null ) ? array_values( $field['sub_fields'] ) : array();
+	}
+
+	/**
+	 * The sub fields belonging to one flexible-content layout.
+	 *
+	 * A row naming a layout that no longer exists has no fields to check: the
+	 * row is already orphaned, and inventing requirements for it would block a
+	 * save nobody could fix from the edit screen.
+	 *
+	 * @param array<string, mixed> $field  Field definition.
+	 * @param string               $layout Layout name stored on the row.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function layout_sub_fields( array $field, string $layout ): array {
+		foreach ( is_array( $field['layouts'] ?? null ) ? $field['layouts'] : array() as $candidate ) {
+			if ( is_array( $candidate ) && (string) ( $candidate['name'] ?? '' ) === $layout ) {
+				return is_array( $candidate['sub_fields'] ?? null ) ? array_values( $candidate['sub_fields'] ) : array();
+			}
+		}
+
+		return array();
 	}
 
 	/**

@@ -42,6 +42,22 @@ final class MetaBoxes extends Module {
 	private const ERROR_PREFIX = 'wpcmb_errors_';
 
 	/**
+	 * Transient prefix recording that a publish was refused.
+	 */
+	private const BLOCKED_PREFIX = 'wpcmb_blocked_';
+
+	/**
+	 * Whether guard_publish() has already recorded this request's errors.
+	 *
+	 * It validates every field that applies, including ones the submission
+	 * left out, so its list is the fuller of the two and the save path must
+	 * not replace it with the narrower one a moment later.
+	 *
+	 * @var bool
+	 */
+	private bool $guarded = false;
+
+	/**
 	 * Only load in the admin.
 	 */
 	public function is_enabled(): bool {
@@ -53,6 +69,7 @@ final class MetaBoxes extends Module {
 	 */
 	public function boot(): void {
 		add_action( 'add_meta_boxes', array( $this, 'add_post_meta_boxes' ), 10, 2 );
+		add_filter( 'wp_insert_post_data', array( $this, 'guard_publish' ), 10, 2 );
 		add_action( 'save_post', array( $this, 'save_post' ), 10, 2 );
 		add_action( 'edit_attachment', array( $this, 'save_attachment' ) );
 
@@ -365,7 +382,9 @@ final class MetaBoxes extends Module {
 			$values->update( $name, $clean[ $name ], $ref );
 		}
 
-		$this->store_errors( $ref, $errors );
+		if ( ! $this->guarded ) {
+			$this->store_errors( $ref, $errors );
+		}
 
 		/**
 		 * Fires after an object's field values have been saved.
@@ -412,12 +431,160 @@ final class MetaBoxes extends Module {
 	}
 
 	/**
+	 * Keep a post out of a public status while its fields are invalid.
+	 *
+	 * The browser gate in validate.js is what an editor experiences: the
+	 * Publish button stays quiet until the fields are filled. This is the half
+	 * that does not depend on a script having run — with JavaScript off, or a
+	 * form posted directly, the status is put back to what it was and the
+	 * reason is reported on the next screen.
+	 *
+	 * It runs on `wp_insert_post_data`, before the row is written, so nothing
+	 * is ever briefly public. And it only ever refuses a *transition* into a
+	 * public status: a post already published is left published, because an
+	 * edit that happens to leave a required field empty must not take a live
+	 * page off the site. A published post with an empty required field is
+	 * reported, not unpublished.
+	 *
+	 * @param array<string, mixed> $data    Post data about to be written.
+	 * @param array<string, mixed> $postarr Raw post array, including the submitted status.
+	 *
+	 * @return array<string, mixed>
+	 */
+	public function guard_publish( $data, $postarr = array() ): array {
+		$data = is_array( $data ) ? $data : array();
+
+		if ( ! is_array( $postarr ) || ! $this->is_field_submission() ) {
+			return $data;
+		}
+
+		$id = (int) ( $postarr['ID'] ?? 0 );
+
+		if ( 0 === $id || ! $this->becomes_public( $data, $postarr ) ) {
+			return $data;
+		}
+
+		$ref    = new ObjectRef( ObjectRef::POST, $id );
+		$errors = $this->submitted_errors( $ref );
+
+		if ( array() === $errors ) {
+			return $data;
+		}
+
+		// Back to where it came from. An auto-draft has nowhere to go back to,
+		// so it becomes a draft: the values are still saved and the post is
+		// still there to finish.
+		$previous = (string) ( $postarr['original_post_status'] ?? '' );
+
+		$data['post_status'] = in_array( $previous, array( '', 'auto-draft', 'new' ), true ) ? 'draft' : $previous;
+
+		// Recorded here rather than left to the save path: a submission that
+		// carried no values at all produces no errors there, and a refusal
+		// nobody explains is worse than the publish it prevented.
+		$this->guarded = true;
+
+		$this->store_errors( $ref, $errors );
+
+		set_transient( $this->blocked_key( $ref ), true, MINUTE_IN_SECONDS * 5 );
+
+		return $data;
+	}
+
+	/**
+	 * Whether this request is one of our forms, with values to check.
+	 *
+	 * The nonce is what makes that certain: without it this would also fire on
+	 * programmatic inserts and on other plugins' saves, which carry no values
+	 * of ours and must not be judged against our fields.
+	 */
+	private function is_field_submission(): bool {
+		if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) {
+			return false;
+		}
+
+		return isset( $_POST['wpcmb_values_nonce'] )
+			&& (bool) wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['wpcmb_values_nonce'] ) ), self::NONCE );
+	}
+
+	/**
+	 * Whether this save moves the post into a status the public can see.
+	 *
+	 * `pending` is not one of them: submitting unfinished work for review is
+	 * exactly when a required field is expected to still be empty.
+	 *
+	 * @param array<string, mixed> $data    Post data about to be written.
+	 * @param array<string, mixed> $postarr Raw post array.
+	 */
+	private function becomes_public( array $data, array $postarr ): bool {
+		$public = array( 'publish', 'future', 'private' );
+		$next   = (string) ( $data['post_status'] ?? '' );
+
+		if ( ! in_array( $next, $public, true ) ) {
+			return false;
+		}
+
+		$previous = (string) ( $postarr['original_post_status'] ?? '' );
+
+		// No original status in the request means this is not a status change
+		// the user asked for — the block editor's meta box post is the case
+		// that matters, and it carries the status it already has.
+		if ( '' === $previous ) {
+			return false;
+		}
+
+		return ! in_array( $previous, $public, true );
+	}
+
+	/**
+	 * Validate the submitted values for an object, as the gate would.
+	 *
+	 * Every field that applies is checked, including ones the request left
+	 * out: an absent required field is the thing being looked for, and unlike
+	 * the save path there is nothing here to overwrite by noticing it.
+	 *
+	 * @param ObjectRef $ref Object being saved.
+	 *
+	 * @return array<string, string>
+	 */
+	private function submitted_errors( ObjectRef $ref ): array {
+		// phpcs:disable WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- is_field_submission() verified the nonce; every value is read by the validator, not stored here.
+		$submitted = isset( $_POST[ Renderer::INPUT_PREFIX ] ) && is_array( $_POST[ Renderer::INPUT_PREFIX ] )
+			? wp_unslash( $_POST[ Renderer::INPUT_PREFIX ] )
+			: array();
+		// phpcs:enable WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+
+		$renderer = $this->container->get( Renderer::class );
+		$fields   = array();
+		$values   = array();
+
+		foreach ( $this->container->get( Resolver::class )->fields( new Context( $ref ) ) as $name => $field ) {
+			if ( ! $renderer->stores_value( $field ) ) {
+				continue;
+			}
+
+			$fields[ $name ] = $field;
+			$values[ $name ] = $submitted[ $name ] ?? null;
+		}
+
+		return $this->container->get( Validator::class )->validate( $fields, $values );
+	}
+
+	/**
 	 * The transient key holding one user's errors for one object.
 	 *
 	 * @param ObjectRef $ref Object reference.
 	 */
 	private function error_key( ObjectRef $ref ): string {
 		return self::ERROR_PREFIX . get_current_user_id() . '_' . $ref;
+	}
+
+	/**
+	 * The transient key recording a refused publish for an object.
+	 *
+	 * @param ObjectRef $ref Object reference.
+	 */
+	private function blocked_key( ObjectRef $ref ): string {
+		return self::BLOCKED_PREFIX . get_current_user_id() . '_' . $ref;
 	}
 
 	/**
@@ -438,15 +605,24 @@ final class MetaBoxes extends Module {
 
 		$errors = $this->take_errors( $ref );
 
-		if ( array() === $errors ) {
+		// A refused publish and a saved-anyway warning are different events,
+		// and the second wording would be a lie about the first: the values
+		// were stored either way, but the post did not go live.
+		$blocked = (bool) get_transient( $this->blocked_key( $ref ) );
+
+		if ( array() === $errors && ! $blocked ) {
 			return;
 		}
 
 		delete_transient( $this->error_key( $ref ) );
+		delete_transient( $this->blocked_key( $ref ) );
 
 		printf(
-			'<div class="notice notice-warning"><p><strong>%s</strong></p><ul class="wpcmb-error-list">',
-			esc_html__( 'Your changes were saved, but some fields need attention:', 'wp-custom-meta-box' )
+			'<div class="notice notice-%s"><p><strong>%s</strong></p><ul class="wpcmb-error-list">',
+			$blocked ? 'error' : 'warning',
+			$blocked
+				? esc_html__( 'This was not published: fill in the required fields first. Your other changes were saved.', 'wp-custom-meta-box' )
+				: esc_html__( 'Your changes were saved, but some fields need attention:', 'wp-custom-meta-box' )
 		);
 
 		foreach ( $errors as $message ) {

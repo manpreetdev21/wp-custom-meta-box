@@ -132,7 +132,15 @@ foreach ( $wpcmb_handlers as $wpcmb_handler ) {
 		continue;
 	}
 
-	if ( ! str_contains( $body, 'current_user_can(' ) && ! str_contains( $body, 'verified_field()' ) ) {
+	// Three legitimate forms: the capability directly, the shared
+	// verified_field() gate, or Permissions, which is the plugin's one
+	// answer to "may this user write this object" and calls
+	// current_user_can() with the object in hand.
+	$gated = str_contains( $body, 'current_user_can(' )
+		|| str_contains( $body, 'verified_field()' )
+		|| str_contains( $body, 'Permissions::can_edit(' );
+
+	if ( ! $gated ) {
 		$wpcmb_uncapped[] = sprintf( 'Ajax::%s()  checks no capability', $wpcmb_handler );
 	}
 

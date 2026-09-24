@@ -11,10 +11,16 @@ namespace WPCMB\Admin;
 
 use WPCMB\Abstracts\Module;
 use WPCMB\Blocks\BlockRegistry;
+use WPCMB\Fields\Context;
 use WPCMB\Fields\FieldGroup;
 use WPCMB\Fields\Locations;
+use WPCMB\Fields\ObjectRef;
+use WPCMB\Fields\Permissions;
 use WPCMB\Fields\Registry;
+use WPCMB\Fields\Renderer;
 use WPCMB\Fields\Repository;
+use WPCMB\Fields\Resolver;
+use WPCMB\Fields\Validator;
 use WPCMB\PostTypes\FieldGroupPostType;
 use WPCMB\FieldTypes\Flexible;
 use WPCMB\FieldTypes\Repeater;
@@ -53,6 +59,7 @@ final class Ajax extends Module {
 		add_action( 'wp_ajax_wpcmb_block_form', array( $this, 'block_form' ) );
 		add_action( 'wp_ajax_wpcmb_location_search', array( $this, 'location_search' ) );
 		add_action( 'wp_ajax_wpcmb_embed_preview', array( $this, 'embed_preview' ) );
+		add_action( 'wp_ajax_wpcmb_validate_values', array( $this, 'validate_values' ) );
 	}
 
 	/**
@@ -365,6 +372,73 @@ final class Ajax extends Module {
 		}
 
 		wp_send_json_success( array( 'html' => wp_kses_post( $html ) ) );
+	}
+
+	/**
+	 * Validate a screen's submitted values without storing anything.
+	 *
+	 * The gate that stops a post being published with a required field empty
+	 * asks this before letting the save start. It runs the real Validator over
+	 * the real resolved fields rather than a second copy of the rules in the
+	 * browser: conditional logic, per-type formats, lengths, ranges, patterns
+	 * and the `wpcmb/validate` filters are all decided in one place, and a
+	 * rule added in PHP is enforced by the gate the moment it exists.
+	 *
+	 * Stores nothing and reveals nothing the caller could not already see: it
+	 * answers only about values the caller just sent, for an object the caller
+	 * is allowed to edit.
+	 */
+	public function validate_values(): void {
+		check_ajax_referer( self::NONCE, 'nonce' );
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- check_ajax_referer() above.
+		$ref = ObjectRef::from( isset( $_POST['object'] ) ? sanitize_text_field( wp_unslash( $_POST['object'] ) ) : '' );
+
+		if ( ! Permissions::can_edit( $ref ) ) {
+			wp_send_json_error( array( 'message' => __( 'You are not allowed to edit this.', 'wp-custom-meta-box' ) ), 403 );
+		}
+
+		// phpcs:disable WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Verified above; every value is read by the validator, never stored or echoed.
+		$submitted = isset( $_POST[ Renderer::INPUT_PREFIX ] ) && is_array( $_POST[ Renderer::INPUT_PREFIX ] )
+			? wp_unslash( $_POST[ Renderer::INPUT_PREFIX ] )
+			: array();
+		// phpcs:enable WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+
+		$renderer = $this->container->get( Renderer::class );
+		$fields   = array();
+
+		foreach ( $this->container->get( Resolver::class )->fields( new Context( $ref ) ) as $name => $field ) {
+			if ( $renderer->stores_value( $field ) ) {
+				$fields[ $name ] = $field;
+			}
+		}
+
+		/*
+		 * Every resolved field is validated, including ones the request left
+		 * out. That is the opposite of the save path, which skips absent
+		 * fields so a partial submission cannot wipe what it never showed —
+		 * here an absent required field is exactly the thing being looked for.
+		 */
+		$values = array();
+
+		foreach ( array_keys( $fields ) as $name ) {
+			$values[ $name ] = $submitted[ $name ] ?? null;
+		}
+
+		$errors = $this->container->get( Validator::class )->validate( $fields, $values );
+		$keys   = array();
+
+		foreach ( $errors as $name => $message ) {
+			$keys[ $name ] = (string) ( $fields[ $name ]['key'] ?? '' );
+		}
+
+		wp_send_json_success(
+			array(
+				'valid'  => array() === $errors,
+				'errors' => $errors,
+				'keys'   => $keys,
+			)
+		);
 	}
 
 	/**

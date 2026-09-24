@@ -60,6 +60,11 @@ final class Assets extends Module {
 	public const ENHANCED_HANDLE = 'wpcmb-enhanced';
 
 	/**
+	 * Handle for the save gate.
+	 */
+	public const VALIDATE_HANDLE = 'wpcmb-validate';
+
+	/**
 	 * The cache-busting version for an asset.
 	 *
 	 * The plugin version alone is not enough: it only changes on release, so
@@ -372,8 +377,36 @@ final class Assets extends Module {
 			)
 		);
 
+		/*
+		 * The save gate. No dependency on `wp-data`: declaring one would pull
+		 * the editor's data layer onto every classic screen to serve the block
+		 * editor, and the script reads it defensively either way.
+		 */
+		wp_enqueue_script(
+			self::VALIDATE_HANDLE,
+			WPCMB_URL . 'assets/js/validate.js',
+			array(),
+			self::version( 'assets/js/validate.js' ),
+			true
+		);
+
+		wp_localize_script(
+			self::VALIDATE_HANDLE,
+			'wpcmbValidate',
+			array(
+				'ajaxUrl' => admin_url( 'admin-ajax.php' ),
+				'nonce'   => wp_create_nonce( Ajax::NONCE ),
+				'object'  => (string) $ref,
+				'i18n'    => array(
+					'blocked'   => __( 'This cannot be saved yet:', 'wp-custom-meta-box' ),
+					'showField' => __( 'Show me', 'wp-custom-meta-box' ),
+				),
+			)
+		);
+
 		wp_set_script_translations( self::FIELDS_HANDLE, 'wp-custom-meta-box', WPCMB_DIR . 'languages' );
 		wp_set_script_translations( self::REPEATER_HANDLE, 'wp-custom-meta-box', WPCMB_DIR . 'languages' );
+		wp_set_script_translations( self::VALIDATE_HANDLE, 'wp-custom-meta-box', WPCMB_DIR . 'languages' );
 	}
 
 	/**

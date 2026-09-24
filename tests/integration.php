@@ -350,6 +350,137 @@ wpcmb_group(
 );
 
 /* -------------------------------------------------------------------------
+ * The publish guard.
+ *
+ * The browser gate is what an editor experiences, but it is a script, and a
+ * script can be off, broken or bypassed. This is the half that holds anyway,
+ * so it is checked against real posts with real statuses rather than shims.
+ * ---------------------------------------------------------------------- */
+
+wpcmb_group(
+	'a post cannot be published while a required field is empty',
+	static function (): void {
+		$page = wpcmb_post_fixture( 'page', 'Integration required' );
+
+		wpcmb_group_fixture(
+			array(
+				'title'    => 'Integration required',
+				'fields'   => array(
+					array( 'name' => 'itest_needed', 'label' => 'Needed', 'type' => 'text', 'required' => true ),
+					array( 'name' => 'itest_spare', 'label' => 'Spare', 'type' => 'text' ),
+				),
+				'location' => array( array( array( 'param' => 'page', 'operator' => '==', 'value' => (string) $page ) ) ),
+			)
+		);
+
+		/**
+		 * Try to publish the page with the given values submitted.
+		 *
+		 * Builds the request a form submission would, because that is what the
+		 * guard reads: the nonce is what tells it the values are ours to judge.
+		 *
+		 * @param array<string, mixed> $values Field values.
+		 *
+		 * @return string The status the post ended up with.
+		 */
+		$publish = static function ( array $values ) use ( $page ): string {
+			wp_update_post( array( 'ID' => $page, 'post_status' => 'draft' ) );
+
+			$_POST = array(
+				'wpcmb_values_nonce'   => wp_create_nonce( 'wpcmb_save_values' ),
+				'wpcmb_values'         => $values,
+				'post_ID'              => $page,
+				'post_status'          => 'publish',
+				'original_post_status' => 'draft',
+			);
+
+			$_REQUEST = $_POST;
+
+			wp_update_post(
+				array(
+					'ID'                   => $page,
+					'post_status'          => 'publish',
+					'original_post_status' => 'draft',
+				)
+			);
+
+			$status = (string) get_post( $page )->post_status;
+
+			$_POST    = array();
+			$_REQUEST = array();
+
+			return $status;
+		};
+
+		wpcmb_is( 'draft' === $publish( array() ), 'publishing with nothing submitted is refused' );
+		wpcmb_is( 'draft' === $publish( array( 'itest_needed' => '' ) ), 'publishing with the field empty is refused' );
+
+		// The refusal has to explain itself, or it reads as a broken button.
+		$errors = get_transient( 'wpcmb_errors_' . get_current_user_id() . '_post_' . $page );
+
+		wpcmb_is( is_array( $errors ) && isset( $errors['itest_needed'] ), 'the reason is recorded for the notice' );
+		wpcmb_is(
+			(bool) get_transient( 'wpcmb_blocked_' . get_current_user_id() . '_post_' . $page ),
+			'the refusal is recorded, so the notice can say "not published"'
+		);
+
+		// Whatever else was typed is still kept: refusing to publish must not
+		// also throw away the work.
+		$publish( array( 'itest_spare' => 'kept' ) );
+
+		wpcmb_is( 'kept' === get_post_meta( $page, 'itest_spare', true ), 'other values are still saved' );
+
+		wpcmb_is( 'publish' === $publish( array( 'itest_needed' => 'filled in' ) ), 'publishing works once it is filled in' );
+
+		// A draft is work in progress. Saving one must never be refused, or a
+		// half-written page cannot be kept at all.
+		wp_update_post( array( 'ID' => $page, 'post_status' => 'publish' ) );
+
+		$_POST = array(
+			'wpcmb_values_nonce'   => wp_create_nonce( 'wpcmb_save_values' ),
+			'wpcmb_values'         => array( 'itest_needed' => '' ),
+			'post_ID'              => $page,
+			'post_status'          => 'draft',
+			'original_post_status' => 'publish',
+		);
+
+		$_REQUEST = $_POST;
+
+		wp_update_post( array( 'ID' => $page, 'post_status' => 'draft', 'original_post_status' => 'publish' ) );
+
+		wpcmb_is( 'draft' === get_post( $page )->post_status, 'saving as a draft is never refused' );
+
+		// An already-public post is left public. An edit that happens to leave
+		// a required field empty must not take a live page off the site.
+		wp_update_post( array( 'ID' => $page, 'post_status' => 'publish' ) );
+
+		$_POST = array(
+			'wpcmb_values_nonce'   => wp_create_nonce( 'wpcmb_save_values' ),
+			'wpcmb_values'         => array( 'itest_needed' => '' ),
+			'post_ID'              => $page,
+			'post_status'          => 'publish',
+			'original_post_status' => 'publish',
+		);
+
+		$_REQUEST = $_POST;
+
+		wp_update_post( array( 'ID' => $page, 'post_status' => 'publish', 'original_post_status' => 'publish' ) );
+
+		wpcmb_is( 'publish' === get_post( $page )->post_status, 'a published page is never unpublished by the guard' );
+
+		$_POST    = array();
+		$_REQUEST = array();
+
+		// Without the nonce this is somebody else's save, carrying none of our
+		// values, and must pass through untouched.
+		wp_update_post( array( 'ID' => $page, 'post_status' => 'draft' ) );
+		wp_update_post( array( 'ID' => $page, 'post_status' => 'publish', 'original_post_status' => 'draft' ) );
+
+		wpcmb_is( 'publish' === get_post( $page )->post_status, 'a save that is not ours is not judged' );
+	}
+);
+
+/* -------------------------------------------------------------------------
  * Clean up everything this run created.
  * ---------------------------------------------------------------------- */
 

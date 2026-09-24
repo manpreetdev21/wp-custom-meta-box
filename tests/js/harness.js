@@ -121,6 +121,19 @@ function setup( options = {} ) {
 		 * @return {Promise} Resolves after the microtask queue drains.
 		 */
 		settle: () => new Promise( ( resolve ) => setTimeout( resolve, 0 ) ),
+
+		/**
+		 * Evaluate another shipped script in this window.
+		 *
+		 * A script that reads its configuration or its environment as it loads
+		 * has to be loaded after the test has arranged both, which is why this
+		 * exists alongside the `scripts` option.
+		 *
+		 * @param {string} name Script filename under assets/js.
+		 */
+		load: ( name ) => {
+			window.eval( fs.readFileSync( path.join( PLUGIN, 'assets', 'js', name ), 'utf8' ) );
+		},
 	};
 }
 
